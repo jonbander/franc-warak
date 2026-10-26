@@ -41,8 +41,8 @@
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
     import { getDatabase, ref, get, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
 
-    // Replace this with the UID of the administrator account and use the same UID in database.rules.json.
-    const ADMIN_UID = 'REPLACE_WITH_ADMIN_UID';
+    // This must stay identical to the administrator UID in database.rules.json.
+    const ADMIN_UID = 'nLQ00ZiJqnP7unDvPeAiDbtBsuX2';
     const status = document.getElementById('status');
     const loginPanel = document.getElementById('login-panel');
     const editorPanel = document.getElementById('editor-panel');
@@ -55,7 +55,9 @@
       const response = await fetch('./firebase-config.json', { cache: 'no-store' });
       if (!response.ok) throw new Error('تعذر تحميل firebase-config.json');
       const config = await response.json();
-      if (!config.apiKey || config.apiKey.startsWith('PASTE_')) throw new Error('يجب إعداد Firebase أولاً. راجع ملف FIREBASE_SETUP_AR.md.');
+      if (!config.apiKey || !config.databaseURL || [config.apiKey, config.databaseURL, config.projectId, config.appId].some((value) => !value || value.includes('PASTE_'))) {
+        throw new Error('يجب إعداد Firebase أولاً. راجع ملف FIREBASE_SETUP_AR.md.');
+      }
       const app = initializeApp(config);
       const auth = getAuth(app);
       const database = getDatabase(app, config.databaseURL);
@@ -100,7 +102,7 @@
         try {
           await set(announcementRef, { active, text, updatedAt: serverTimestamp() });
           document.getElementById('announcement-active').checked = active;
-          setStatus(active ? 'تم نشر الإعلان؛ سيظهر للمستخدمين المتصلين.' : 'تم إخفاء الإعلان عن المستخدمين.');
+          setStatus(active ? 'تم نشر الإعلان؛ سيظهر عند فتح التطبيق أو العودة إليه.' : 'تم إخفاء الإعلان عن المستخدمين، ويُحدّث ذلك عند فتح التطبيق أو العودة إليه.');
         } catch (error) {
           setStatus(`تعذر حفظ الإعلان: ${error.message}`, true);
         }

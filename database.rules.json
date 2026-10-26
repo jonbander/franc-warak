@@ -19,7 +19,7 @@
     "announcement": {
       "current": {
         ".read": true,
-        ".write": "auth != null && auth.uid === 'REPLACE_WITH_ADMIN_UID'",
+        ".write": "auth != null && auth.uid === 'nLQ00ZiJqnP7unDvPeAiDbtBsuX2'",
         ".validate": "newData.hasChildren(['active', 'text', 'updatedAt']) && newData.child('active').isBoolean() && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('updatedAt').isNumber()",
         "active": { ".validate": "newData.isBoolean()" },
         "text": { ".validate": "newData.isString() && newData.val().length <= 1000" },
