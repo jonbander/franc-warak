@@ -1,5 +1,5 @@
 import React, { FormEvent, useEffect, useRef, useState } from 'react';
-import { limitToLast, onChildAdded, onValue, orderByKey, push, query, ref, serverTimestamp, set } from 'firebase/database';
+import { limitToLast, onChildAdded, onChildRemoved, onValue, orderByKey, push, query, ref, serverTimestamp, set } from 'firebase/database';
 import { AlertCircle, LoaderCircle, MessageCircle, Send, WifiOff } from 'lucide-react';
 import { ensureAnonymousUser, getFirebaseDatabase } from '../services/firebaseClient';
 
@@ -19,6 +19,8 @@ interface ChatViewProps {
 }
 
 const CHAT_PATH = 'publicChat/messages';
+const CHAT_CONFIG_PATH = 'publicChat/config';
+const CHAT_NOTICE_PATH = 'publicChat/notice';
 const MAX_MESSAGE_LENGTH = 500;
 
 export const ChatView: React.FC<ChatViewProps> = ({ suggestedName, onOpenSettings }) => {
@@ -29,6 +31,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName, onOpenSetting
   const [error, setError] = useState('');
   const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'offline'>('connecting');
   const [senderUid, setSenderUid] = useState('');
+  const [chatConfig, setChatConfig] = useState({ enabled: true, readOnly: false });
+  const [adminNotice, setAdminNotice] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
   const senderName = suggestedName.trim().slice(0, 60);
 
@@ -57,6 +61,17 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName, onOpenSetting
           setConnectionState('offline');
           setLoading(false);
         }));
+        unsubscribers.push(onChildRemoved(recentMessages, (snapshot) => {
+          setMessages((current) => current.filter((item) => item.id !== snapshot.key));
+        }));
+        unsubscribers.push(onValue(ref(database, CHAT_CONFIG_PATH), (snapshot) => {
+          const config = snapshot.val() || {};
+          setChatConfig({ enabled: config.enabled !== false, readOnly: config.readOnly === true });
+        }));
+        unsubscribers.push(onValue(ref(database, CHAT_NOTICE_PATH), (snapshot) => {
+          const notice = snapshot.val();
+          setAdminNotice(notice?.active === true && typeof notice.text === 'string' ? notice.text.trim() : '');
+        }));
         unsubscribers.push(onValue(ref(database, '.info/connected'), (snapshot) => {
           setConnectionState(snapshot.val() === true ? 'connected' : 'offline');
         }));
@@ -83,7 +98,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName, onOpenSetting
     event.preventDefault();
     const cleanName = suggestedName.trim().slice(0, 60);
     const cleanText = messageText.trim();
-    if (!cleanName || !cleanText || !senderUid || sending) return;
+    if (!cleanName || !cleanText || !senderUid || sending || !chatConfig.enabled || chatConfig.readOnly) return;
     if (cleanText.length > MAX_MESSAGE_LENGTH) {
       setError(`الحد الأقصى للرسالة ${MAX_MESSAGE_LENGTH} حرفاً.`);
       return;
@@ -154,6 +169,18 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName, onOpenSetting
         </div>
       </div>
 
+      {adminNotice && (
+        <aside role="status" className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-sm leading-relaxed text-sky-950">
+          <strong className="ml-1">تنبيه الإدارة:</strong>{adminNotice}
+        </aside>
+      )}
+      {!chatConfig.enabled && (
+        <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">أوقفت الإدارة غرفة الدردشة مؤقتاً. يمكنك قراءة الرسائل فقط.</p>
+      )}
+      {chatConfig.enabled && chatConfig.readOnly && (
+        <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">الدردشة في وضع القراءة فقط حالياً.</p>
+      )}
+
       <div ref={listRef} className="flex-1 min-h-72 max-h-[52vh] space-y-3 overflow-y-auto rounded-2xl border border-stone-200 bg-white p-3 shadow-xs">
         {loading && <div className="flex justify-center py-8 text-sm text-stone-400"><LoaderCircle className="ml-2 h-4 w-4 animate-spin" />جارٍ تحميل الرسائل…</div>}
         {!loading && messages.length === 0 && connectionState === 'connected' && <p className="py-12 text-center text-sm text-stone-400">لا توجد رسائل بعد. كن أول من يبدأ الحديث.</p>}
@@ -204,7 +231,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName, onOpenSetting
           />
           <button
             type="submit"
-            disabled={sending || connectionState !== 'connected' || !senderName || !messageText.trim()}
+            disabled={sending || connectionState !== 'connected' || !senderName || !messageText.trim() || !chatConfig.enabled || chatConfig.readOnly}
             aria-label="إرسال الرسالة"
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-emerald-800 px-3 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
           >

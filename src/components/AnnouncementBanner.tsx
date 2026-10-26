@@ -52,7 +52,7 @@ export const AnnouncementBanner: React.FC = () => {
     : '#451a03';
 
   return (
-    <aside role="status" aria-live="polite" className="mx-3 mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-950 shadow-xs">
+    <aside role="status" aria-live="polite" className="sticky top-14 z-20 mx-3 mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-950 shadow-md">
       <style>{`@keyframes fw-announcement-ltr{from{transform:translateX(calc(-100% - 100vw))}to{transform:translateX(calc(100vw + 100%))}}.fw-announcement-marquee{animation:fw-announcement-ltr 20s linear infinite}@media(prefers-reduced-motion:reduce){.fw-announcement-marquee{animation:none;transform:none;white-space:normal;width:auto}}`}</style>
       <div className="flex items-start gap-2">
         <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
