@@ -20,9 +20,11 @@
       "current": {
         ".read": true,
         ".write": "auth != null && auth.uid === 'nLQ00ZiJqnP7unDvPeAiDbtBsuX2'",
-        ".validate": "newData.hasChildren(['active', 'text', 'updatedAt']) && newData.child('active').isBoolean() && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('updatedAt').isNumber()",
+        ".validate": "newData.hasChildren(['active', 'text', 'textColor', 'scroll', 'updatedAt']) && newData.child('active').isBoolean() && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('textColor').isString() && newData.child('textColor').val().matches(/^#[0-9a-fA-F]{6}$/) && newData.child('scroll').isBoolean() && newData.child('updatedAt').isNumber()",
         "active": { ".validate": "newData.isBoolean()" },
         "text": { ".validate": "newData.isString() && newData.val().length <= 1000" },
+        "textColor": { ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)" },
+        "scroll": { ".validate": "newData.isBoolean()" },
         "updatedAt": { ".validate": "newData.isNumber()" },
         "$other": { ".validate": false }
       }

@@ -6,6 +6,8 @@ import { getFirebaseDatabase, loadFirebaseConfig } from '../services/firebaseCli
 interface Announcement {
   active?: boolean;
   text?: string;
+  textColor?: string;
+  scroll?: boolean;
   updatedAt?: number;
 }
 
@@ -47,12 +49,22 @@ export const AnnouncementBanner: React.FC = () => {
     : '';
   const key = `${announcement?.updatedAt ?? ''}:${text}`;
   if (!text || dismissedKey === key) return null;
+  const color = typeof announcement?.textColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(announcement.textColor)
+    ? announcement.textColor
+    : '#451a03';
 
   return (
     <aside role="status" aria-live="polite" className="mx-3 mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-950 shadow-xs">
+      <style>{`@keyframes fw-announcement-ltr{from{transform:translateX(calc(-100% - 100vw))}to{transform:translateX(calc(100vw + 100%))}}.fw-announcement-marquee{animation:fw-announcement-ltr 20s linear infinite}@media(prefers-reduced-motion:reduce){.fw-announcement-marquee{animation:none;transform:none;white-space:normal;width:auto}}`}</style>
       <div className="flex items-start gap-2">
         <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-        <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-relaxed">{text}</p>
+        <div className="min-w-0 flex-1 overflow-hidden" dir="ltr">
+          {announcement?.scroll === true ? (
+            <p dir="rtl" className="fw-announcement-marquee inline-block w-max max-w-none whitespace-nowrap text-sm leading-relaxed" style={{ color }}>{text}</p>
+          ) : (
+            <p dir="rtl" className="whitespace-pre-wrap break-words text-sm leading-relaxed" style={{ color }}>{text}</p>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setDismissedKey(key)}
