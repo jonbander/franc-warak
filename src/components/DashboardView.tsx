@@ -127,8 +127,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Quick Target Progress */}
           <div className="bg-stone-900/80 backdrop-blur-xs p-4 rounded-xl border border-stone-700/60 w-full md:w-72 shrink-0">
             <div className="flex justify-between items-center text-xs text-stone-300 mb-1.5">
-              <span>هدف القطف ({formatNumber(settings.targetHarvestKg)} كغ)</span>
-              <span className="font-mono font-bold text-emerald-400">{targetProgress}%</span>
+              <span>هدف القطف ({settings.targetHarvestKg > 0 ? `${formatNumber(settings.targetHarvestKg)} كغ` : 'غير محدد'})</span>
+              <span className="font-mono font-bold text-emerald-400">{settings.targetHarvestKg > 0 ? `${targetProgress}%` : '—'}</span>
             </div>
             <div className="w-full bg-stone-700 rounded-full h-2.5 overflow-hidden">
               <div 
@@ -138,7 +138,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div className="mt-2 text-[11px] text-stone-400 flex justify-between font-mono">
               <span>تم قطف وبيع: {formatNumber(totalKgSold)} كغ</span>
-              <span>المتبقي: {formatNumber(Math.max(0, settings.targetHarvestKg - totalKgSold))} كغ</span>
+              <span>المتبقي: {settings.targetHarvestKg > 0 ? `${formatNumber(Math.max(0, settings.targetHarvestKg - totalKgSold))} كغ` : '—'}</span>
             </div>
           </div>
         </div>

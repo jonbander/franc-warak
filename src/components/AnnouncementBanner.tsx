@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { get, ref } from 'firebase/database';
-import { Megaphone, X } from 'lucide-react';
+import { Megaphone } from 'lucide-react';
 import { getFirebaseDatabase, loadFirebaseConfig } from '../services/firebaseClient';
 
 interface Announcement {
@@ -13,7 +13,6 @@ interface Announcement {
 
 export const AnnouncementBanner: React.FC = () => {
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
-  const [dismissedKey, setDismissedKey] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -47,8 +46,7 @@ export const AnnouncementBanner: React.FC = () => {
   const text = announcement?.active && typeof announcement.text === 'string'
     ? announcement.text.trim()
     : '';
-  const key = `${announcement?.updatedAt ?? ''}:${text}`;
-  if (!text || dismissedKey === key) return null;
+  if (!text) return null;
   const color = typeof announcement?.textColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(announcement.textColor)
     ? announcement.textColor
     : '#451a03';
@@ -65,14 +63,6 @@ export const AnnouncementBanner: React.FC = () => {
             <p dir="rtl" className="whitespace-pre-wrap break-words text-sm leading-relaxed" style={{ color }}>{text}</p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setDismissedKey(key)}
-          aria-label="إخفاء الإعلان"
-          className="rounded-md p-1 text-amber-800 hover:bg-amber-100"
-        >
-          <X className="h-4 w-4" />
-        </button>
       </div>
     </aside>
   );

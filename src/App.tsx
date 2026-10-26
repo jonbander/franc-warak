@@ -170,6 +170,12 @@ export default function App() {
     saveSettings(updated);
   };
 
+  const handleTargetHarvestChange = (targetHarvestKg: number) => {
+    const updated = { ...settings, targetHarvestKg };
+    setSettings(updated);
+    saveSettings(updated);
+  };
+
   // Clear local season data
   const handleResetData = () => {
     if (confirm('سيتم حذف جميع المبيعات والمصاريف والأجور المحفوظة على هذا الجهاز نهائياً. صدّر نسخة احتياطية أولاً إذا كنت تحتاجها. هل تريد المتابعة؟')) {
@@ -278,7 +284,11 @@ export default function App() {
           />
         )}
         {currentTab === 'settings' && (
-          <SettingsView settings={settings} onFarmerNameChange={handleFarmerNameChange} />
+          <SettingsView
+            settings={settings}
+            onFarmerNameChange={handleFarmerNameChange}
+            onTargetHarvestChange={handleTargetHarvestChange}
+          />
         )}
         {currentTab === 'about' && <AboutView />}
         {currentTab === 'chat' && <ChatView suggestedName={settings.farmerName} onOpenSettings={() => setCurrentTab('settings')} />}
