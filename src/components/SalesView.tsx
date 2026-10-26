@@ -1,4 +1,4 @@
-import React, { useState, useId } from 'react';
+import React, { useState, useId, useEffect } from 'react';
 import { 
   PlusCircle, 
   Search, 
@@ -25,6 +25,8 @@ interface SalesViewProps {
   onViewReceipt: (sale: SaleRecord) => void;
   isAddModalOpen: boolean;
   setIsAddModalOpen: (open: boolean) => void;
+  calculatorPrefill?: { quantity: number; unitPrice: number; laborCost: number } | null;
+  onCalculatorPrefillConsumed?: () => void;
 }
 
 export const SalesView: React.FC<SalesViewProps> = ({
@@ -36,6 +38,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
   onViewReceipt,
   isAddModalOpen,
   setIsAddModalOpen,
+  calculatorPrefill,
+  onCalculatorPrefillConsumed,
 }) => {
   const buyerNameId = useId();
   const buyerPhoneId = useId();
@@ -43,6 +47,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const varietyId = useId();
   const quantityId = useId();
   const unitId = useId();
+  const weightPerUnitKgId = useId();
   const unitPriceId = useId();
   const laborCostId = useId();
   const paymentStatusId = useId();
@@ -67,6 +72,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
     grapeVariety: 'ورق عنب فرنسي نخب أول (طري وفاخر)' as GrapeVariety,
     quantity: 100,
     unit: 'كيلوغرام' as UnitType,
+    weightPerUnitKg: 0,
     unitPrice: 3.0,
     laborCost: 40,
     paidAmount: 300,
@@ -75,6 +81,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
     workerNotes: '',
     notes: '',
   });
+
+  useEffect(() => {
+    if (!isAddModalOpen || !calculatorPrefill) return;
+    const total = Number((calculatorPrefill.quantity * calculatorPrefill.unitPrice).toFixed(2));
+    setEditingSale(null);
+    setFormData((current) => ({ ...current, quantity: calculatorPrefill.quantity, unit: 'كيلوغرام', weightPerUnitKg: 0, unitPrice: calculatorPrefill.unitPrice, laborCost: calculatorPrefill.laborCost, paidAmount: total, paymentStatus: 'مدفوع بالكامل' }));
+    onCalculatorPrefillConsumed?.();
+  }, [isAddModalOpen, calculatorPrefill, onCalculatorPrefillConsumed]);
 
   // Derived real-time calculations
   const totalAmount = Number((formData.quantity * formData.unitPrice).toFixed(2));
@@ -91,6 +105,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
       grapeVariety: 'ورق عنب فرنسي نخب أول (طري وفاخر)',
       quantity: 100,
       unit: 'كيلوغرام',
+      weightPerUnitKg: 0,
       unitPrice: 3.2,
       laborCost: 40,
       paidAmount: 320,
@@ -112,6 +127,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
       grapeVariety: sale.grapeVariety,
       quantity: sale.quantity,
       unit: sale.unit,
+      weightPerUnitKg: sale.weightPerUnitKg ?? 0,
       unitPrice: sale.unitPrice,
       laborCost: sale.laborCost,
       paidAmount: sale.paidAmount,
@@ -134,6 +150,15 @@ export const SalesView: React.FC<SalesViewProps> = ({
       alert('يرجى التأكد من إدخال كمية وسعر إفرادي صحيحين');
       return;
     }
+    if (formData.unit !== 'كيلوغرام' && (!Number.isFinite(formData.weightPerUnitKg) || formData.weightPerUnitKg <= 0)) {
+      alert('يرجى إدخال وزن صحيح بالكيلوغرام لكل وحدة تعبئة');
+      return;
+    }
+    if (!Number.isFinite(formData.paidAmount) || formData.paidAmount < 0 || formData.paidAmount > totalAmount) {
+      alert('يجب أن يكون المبلغ المدفوع بين صفر وإجمالي قيمة البيع');
+      return;
+    }
+    const computedPaymentStatus: PaymentStatus = formData.paidAmount <= 0 ? 'آجل (غير مدفوع)' : formData.paidAmount >= totalAmount ? 'مدفوع بالكامل' : 'دفعة جزئية';
 
     const salePayload = {
       date: formData.date,
@@ -142,12 +167,13 @@ export const SalesView: React.FC<SalesViewProps> = ({
       grapeVariety: formData.grapeVariety,
       quantity: Number(formData.quantity),
       unit: formData.unit,
+      weightPerUnitKg: formData.unit === 'كيلوغرام' ? undefined : Number(formData.weightPerUnitKg),
       unitPrice: Number(formData.unitPrice),
       laborCost: Number(formData.laborCost),
       totalAmount,
       netAmount,
       paidAmount: Number(formData.paidAmount),
-      paymentStatus: formData.paymentStatus,
+      paymentStatus: computedPaymentStatus,
       paymentMethod: formData.paymentMethod,
       workerNotes: formData.workerNotes.trim(),
       notes: formData.notes.trim(),
@@ -676,7 +702,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         setFormData({ 
                           ...formData, 
                           quantity: val,
-                          paidAmount: Number((val * formData.unitPrice).toFixed(2))
+                          paidAmount: Number((val * formData.unitPrice).toFixed(2)),
+                          paymentStatus: 'مدفوع بالكامل'
                         });
                       }}
                       className="w-full px-3 py-2 text-sm font-mono bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
@@ -701,6 +728,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     </select>
                   </div>
 
+                  {formData.unit !== 'كيلوغرام' && (
+                    <div>
+                      <label htmlFor={weightPerUnitKgId} className="block text-[11px] font-semibold text-stone-700 mb-1">وزن الوحدة (كغ) *</label>
+                      <input id={weightPerUnitKgId} type="number" step="any" min="0.01" required value={formData.weightPerUnitKg || ''} onChange={(e) => setFormData({ ...formData, weightPerUnitKg: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 text-sm font-mono bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+                      <span className="text-[10px] text-stone-500">أدخل الوزن الفعلي لوحدة هذه الصفقة</span>
+                    </div>
+                  )}
+
                   {/* Unit Price (السعر الإفرادي) */}
                   <div>
                     <label htmlFor={unitPriceId} className="block text-[11px] font-semibold text-stone-700 mb-1">
@@ -718,7 +753,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         setFormData({ 
                           ...formData, 
                           unitPrice: val,
-                          paidAmount: Number((formData.quantity * val).toFixed(2))
+                          paidAmount: Number((formData.quantity * val).toFixed(2)),
+                          paymentStatus: 'مدفوع بالكامل'
                         });
                       }}
                       className="w-full px-3 py-2 text-sm font-mono bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
@@ -788,7 +824,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       setFormData({ 
                         ...formData, 
                         paymentStatus: st,
-                        paidAmount: st === 'مدفوع بالكامل' ? totalAmount : st === 'آجل (غير مدفوع)' ? 0 : formData.paidAmount
+                        paidAmount: st === 'مدفوع بالكامل' ? totalAmount : st === 'آجل (غير مدفوع)' ? 0 : (formData.paidAmount > 0 && formData.paidAmount < totalAmount ? formData.paidAmount : Number((totalAmount / 2).toFixed(2)))
                       });
                     }}
                     className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600 text-stone-800"
@@ -806,9 +842,11 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   <input
                     id={paidAmountId}
                     type="number"
+                    min="0"
+                    max={totalAmount}
                     step="any"
                     value={formData.paidAmount}
-                    onChange={(e) => setFormData({ ...formData, paidAmount: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => { const paidAmount = parseFloat(e.target.value) || 0; const paymentStatus: PaymentStatus = paidAmount <= 0 ? 'آجل (غير مدفوع)' : paidAmount >= totalAmount ? 'مدفوع بالكامل' : 'دفعة جزئية'; setFormData({ ...formData, paidAmount, paymentStatus }); }}
                     className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
                   />
                   {remainingAmount > 0 && (

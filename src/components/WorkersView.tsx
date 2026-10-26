@@ -60,8 +60,8 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
   });
 
   // Calculate total and remaining
-  const calculatedTotalWage = Number((formData.unitsOrHours * formData.ratePerUnit).toFixed(2));
-  const remainingWage = Number((calculatedTotalWage - formData.paidWage).toFixed(2));
+  const calculatedTotalWage = Number((formData.unitsOrHours * formData.ratePerUnit * (formData.workType === 'أجر يومي' ? formData.workerCount : 1)).toFixed(2));
+  const remainingWage = Number(Math.max(0, calculatedTotalWage - formData.paidWage).toFixed(2));
 
   const handleOpenAdd = () => {
     setEditingWage(null);
@@ -99,8 +99,12 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
       alert('يرجى إدخال اسم العامل أو رئيس الورشة');
       return;
     }
-    if (formData.unitsOrHours <= 0 || formData.ratePerUnit <= 0) {
-      alert('يرجى إدخال قيم صحيحة للكمية ومعدل الأجر');
+    if (formData.unitsOrHours <= 0 || formData.ratePerUnit <= 0 || formData.workerCount <= 0) {
+      alert('يرجى إدخال قيم صحيحة للكمية ومعدل الأجر وعدد العمال');
+      return;
+    }
+    if (!Number.isFinite(formData.paidWage) || formData.paidWage < 0 || formData.paidWage > calculatedTotalWage) {
+      alert('يجب أن يكون الأجر المدفوع بين صفر وإجمالي الأجر المستحق');
       return;
     }
 
@@ -492,7 +496,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                   <select
                     id={workTypeId}
                     value={formData.workType}
-                    onChange={(e) => setFormData({ ...formData, workType: e.target.value as WorkerPaymentType })}
+                    onChange={(e) => { const workType = e.target.value as WorkerPaymentType; const next = { ...formData, workType }; const total = next.unitsOrHours * next.ratePerUnit * (workType === 'أجر يومي' ? next.workerCount : 1); setFormData({ ...next, paidWage: Number(total.toFixed(2)) }); }}
                     className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 focus:bg-white text-stone-800"
                   >
                     <option value="أجر بالوزن (بالكيلو)">أجر بالوزن (بالكيلو)</option>
@@ -513,7 +517,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                     type="number"
                     min="1"
                     value={formData.workerCount}
-                    onChange={(e) => setFormData({ ...formData, workerCount: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => { const workerCount = parseInt(e.target.value) || 1; const next = { ...formData, workerCount }; const total = next.unitsOrHours * next.ratePerUnit * (next.workType === 'أجر يومي' ? next.workerCount : 1); setFormData({ ...next, paidWage: Number(total.toFixed(2)) }); }}
                     className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 focus:bg-white"
                   />
                 </div>
@@ -534,7 +538,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                       setFormData({ 
                         ...formData, 
                         unitsOrHours: val,
-                        paidWage: Number((val * formData.ratePerUnit).toFixed(2))
+                        paidWage: Number((val * formData.ratePerUnit * (formData.workType === 'أجر يومي' ? formData.workerCount : 1)).toFixed(2))
                       });
                     }}
                     className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 focus:bg-white"
@@ -557,7 +561,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                       setFormData({ 
                         ...formData, 
                         ratePerUnit: val,
-                        paidWage: Number((formData.unitsOrHours * val).toFixed(2))
+                        paidWage: Number((formData.unitsOrHours * val * (formData.workType === 'أجر يومي' ? formData.workerCount : 1)).toFixed(2))
                       });
                     }}
                     className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 focus:bg-white"
@@ -582,6 +586,8 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                     id={paidWageId}
                     type="number"
                     step="any"
+                    min="0"
+                    max={calculatedTotalWage}
                     value={formData.paidWage}
                     onChange={(e) => setFormData({ ...formData, paidWage: parseFloat(e.target.value) || 0 })}
                     className="w-28 px-2 py-1 text-xs font-mono bg-white border border-amber-300 rounded-md focus:outline-none text-left"

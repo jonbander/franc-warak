@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
+import { getSaleKgEquivalent } from '../utils/units';
+import vineyardImage from '../assets/images/vineyard_grape_leaves_1792997175000.jpg';
 
 interface DashboardViewProps {
   sales: SaleRecord[];
@@ -58,13 +60,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const profitMargin = totalSalesRevenue > 0 ? (netSeasonProfit / totalSalesRevenue) * 100 : 0;
   
   // Total quantity
-  const totalKgSold = sales.reduce((acc, curr) => {
-    // If unit is kg, add directly, if box estimate 5kg average or keep raw
-    return acc + curr.quantity;
-  }, 0);
+  const totalKgSold = sales.reduce((acc, curr) => acc + getSaleKgEquivalent(curr), 0);
+  const salesWithKnownWeight = sales.filter((sale) => getSaleKgEquivalent(sale) > 0);
+  const packageSalesWithoutWeight = sales.filter((sale) => sale.unit !== 'كيلوغرام' && getSaleKgEquivalent(sale) === 0).length;
+  const knownWeightRevenue = salesWithKnownWeight.reduce((acc, sale) => acc + sale.totalAmount, 0);
+  const knownWeightLabor = salesWithKnownWeight.reduce((acc, sale) => acc + sale.laborCost, 0) + extraWorkerWages;
 
-  const averagePricePerUnit = totalKgSold > 0 ? totalSalesRevenue / totalKgSold : 0;
-  const averageLaborPerUnit = totalKgSold > 0 ? totalLaborCostAll / totalKgSold : 0;
+  const averagePricePerUnit = totalKgSold > 0 ? knownWeightRevenue / totalKgSold : 0;
+  const averageLaborPerUnit = totalKgSold > 0 ? knownWeightLabor / totalKgSold : 0;
 
   // Unpaid sales receivables
   const totalReceivables = sales.reduce((acc, curr) => {
@@ -89,7 +92,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="relative rounded-2xl overflow-hidden border border-stone-200 shadow-xs bg-stone-900 text-white">
         <div className="absolute inset-0 z-0">
           <img
-            src="/src/assets/images/vineyard_grape_leaves_1792997175000.jpg"
+            src={vineyardImage}
             alt="كروم ورق العنب الفرنسي"
             className="w-full h-full object-cover opacity-35"
             referrerPolicy="no-referrer"
@@ -135,6 +138,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
+      {packageSalesWithoutWeight > 0 && (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          لا يشمل إجمالي الكيلوغرامات {packageSalesWithoutWeight} عملية بيع قديمة بوحدة تعبئة لم يُسجل وزنها. عدّل كل عملية وأدخل وزن الوحدة لاحتسابها.
+        </p>
+      )}
       {/* Main KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Sales Revenue */}
@@ -231,7 +239,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div>
           <span className="text-stone-500 block mb-0.5">عائد الكيلو الصافي بعد التكاليف</span>
           <span className="text-sm font-bold font-mono text-emerald-700">
-            {formatCurrency(totalKgSold > 0 ? netSeasonProfit / totalKgSold : 0, settings.currency)}
+            {packageSalesWithoutWeight > 0 ? 'غير متاح حتى إدخال أوزان السجلات القديمة' : formatCurrency(totalKgSold > 0 ? netSeasonProfit / totalKgSold : 0, settings.currency)}
           </span>
         </div>
       </div>
@@ -326,7 +334,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                   <div className="text-xs text-stone-500 flex items-center gap-2">
                     <span className="font-mono font-medium text-stone-700">
-                      {formatNumber(sale.quantity)} {sale.unit}
+                      {formatNumber(sale.quantity)} {sale.unit}{sale.unit !== 'كيلوغرام' && sale.weightPerUnitKg ? ` (${formatNumber(sale.weightPerUnitKg)} كغ/وحدة)` : ''}
                     </span>
                     <span aria-hidden="true">×</span>
                     <span className="font-mono">

@@ -24,6 +24,8 @@ export interface SaleRecord {
   grapeVariety: GrapeVariety;
   quantity: number;
   unit: UnitType;
+  /** Kilograms represented by one package unit; required for non-kg sales. */
+  weightPerUnitKg?: number;
   unitPrice: number;
   laborCost: number; // أجار العمال المرتبط بالعملية
   totalAmount: number; // الكمية × السعر الإفرادي

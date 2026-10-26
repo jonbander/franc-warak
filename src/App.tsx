@@ -42,6 +42,7 @@ export default function App() {
 
   // Modal States
   const [isAddSaleOpen, setIsAddSaleOpen] = useState(false);
+  const [calculatorPrefill, setCalculatorPrefill] = useState<{ quantity: number; unitPrice: number; laborCost: number } | null>(null);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isAddWorkerOpen, setIsAddWorkerOpen] = useState(false);
   const [selectedReceiptSale, setSelectedReceiptSale] = useState<SaleRecord | null>(null);
@@ -62,7 +63,7 @@ export default function App() {
   const handleAddSale = (newSaleData: Omit<SaleRecord, 'id' | 'createdAt'>) => {
     const newSale: SaleRecord = {
       ...newSaleData,
-      id: `sale-${Date.now().toString().slice(-5)}`,
+      id: `sale-${crypto.randomUUID()}`,
       createdAt: new Date().toISOString(),
     };
     const updated = [newSale, ...sales];
@@ -86,7 +87,7 @@ export default function App() {
   const handleAddExpense = (newExpData: Omit<ExpenseRecord, 'id' | 'createdAt'>) => {
     const newExp: ExpenseRecord = {
       ...newExpData,
-      id: `exp-${Date.now().toString().slice(-5)}`,
+      id: `exp-${crypto.randomUUID()}`,
       createdAt: new Date().toISOString(),
     };
     const updated = [newExp, ...expenses];
@@ -110,7 +111,7 @@ export default function App() {
   const handleAddWorkerWage = (newWageData: Omit<WorkerWageRecord, 'id' | 'createdAt'>) => {
     const newWage: WorkerWageRecord = {
       ...newWageData,
-      id: `wage-${Date.now().toString().slice(-5)}`,
+      id: `wage-${crypto.randomUUID()}`,
       createdAt: new Date().toISOString(),
     };
     const updated = [newWage, ...workerWages];
@@ -150,6 +151,7 @@ export default function App() {
 
   // Apply calculator simulation to a new sale
   const handleApplyCalculatorToSale = (params: { quantity: number; unitPrice: number; laborCost: number }) => {
+    setCalculatorPrefill(params);
     setCurrentTab('sales');
     setIsAddSaleOpen(true);
   };
@@ -208,6 +210,8 @@ export default function App() {
             onViewReceipt={setSelectedReceiptSale}
             isAddModalOpen={isAddSaleOpen}
             setIsAddModalOpen={setIsAddSaleOpen}
+            calculatorPrefill={calculatorPrefill}
+            onCalculatorPrefillConsumed={() => setCalculatorPrefill(null)}
           />
         )}
 
