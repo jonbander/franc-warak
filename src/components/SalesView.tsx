@@ -12,12 +12,13 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
-import { SaleRecord, GrapeVariety, UnitType, PaymentStatus, PaymentMethod } from '../types';
+import { SaleRecord, WorkerWageRecord, GrapeVariety, UnitType, PaymentStatus, PaymentMethod } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
 import { exportSalesToCSV } from '../utils/storage';
 
 interface SalesViewProps {
   sales: SaleRecord[];
+  workerWages: WorkerWageRecord[];
   currencySymbol: string;
   onAddSale: (sale: Omit<SaleRecord, 'id' | 'createdAt'>) => void;
   onUpdateSale: (sale: SaleRecord) => void;
@@ -31,6 +32,7 @@ interface SalesViewProps {
 
 export const SalesView: React.FC<SalesViewProps> = ({
   sales,
+  workerWages,
   currencySymbol,
   onAddSale,
   onUpdateSale,
@@ -50,6 +52,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const weightPerUnitKgId = useId();
   const unitPriceId = useId();
   const laborCostId = useId();
+  const laborPaidAmountId = useId();
   const paymentStatusId = useId();
   const paidAmountId = useId();
   const paymentMethodId = useId();
@@ -75,6 +78,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
     weightPerUnitKg: 0,
     unitPrice: 3.0,
     laborCost: 40,
+    laborPaidAmount: 0,
     paidAmount: 300,
     paymentStatus: 'مدفوع بالكامل' as PaymentStatus,
     paymentMethod: 'نقدي (كاش)' as PaymentMethod,
@@ -86,7 +90,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
     if (!isAddModalOpen || !calculatorPrefill) return;
     const total = Number((calculatorPrefill.quantity * calculatorPrefill.unitPrice).toFixed(2));
     setEditingSale(null);
-    setFormData((current) => ({ ...current, quantity: calculatorPrefill.quantity, unit: 'كيلوغرام', weightPerUnitKg: 0, unitPrice: calculatorPrefill.unitPrice, laborCost: calculatorPrefill.laborCost, paidAmount: total, paymentStatus: 'مدفوع بالكامل' }));
+    setFormData((current) => ({ ...current, quantity: calculatorPrefill.quantity, unit: 'كيلوغرام', weightPerUnitKg: 0, unitPrice: calculatorPrefill.unitPrice, laborCost: calculatorPrefill.laborCost, laborPaidAmount: 0, paidAmount: total, paymentStatus: 'مدفوع بالكامل' }));
     onCalculatorPrefillConsumed?.();
   }, [isAddModalOpen, calculatorPrefill, onCalculatorPrefillConsumed]);
 
@@ -108,6 +112,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
       weightPerUnitKg: 0,
       unitPrice: 3.2,
       laborCost: 40,
+      laborPaidAmount: 0,
       paidAmount: 320,
       paymentStatus: 'مدفوع بالكامل',
       paymentMethod: 'نقدي (كاش)',
@@ -119,6 +124,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
   // Handle open edit
   const handleOpenEdit = (sale: SaleRecord) => {
+    const linkedWage = workerWages.find((wage) => wage.relatedSaleId === sale.id);
     setEditingSale(sale);
     setFormData({
       date: sale.date,
@@ -130,6 +136,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
       weightPerUnitKg: sale.weightPerUnitKg ?? 0,
       unitPrice: sale.unitPrice,
       laborCost: sale.laborCost,
+      laborPaidAmount: sale.laborPaidAmount ?? linkedWage?.paidWage ?? 0,
       paidAmount: sale.paidAmount,
       paymentStatus: sale.paymentStatus,
       paymentMethod: sale.paymentMethod,
@@ -158,6 +165,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
       alert('يجب أن يكون المبلغ المدفوع بين صفر وإجمالي قيمة البيع');
       return;
     }
+    if (!Number.isFinite(formData.laborPaidAmount) || formData.laborPaidAmount < 0 || formData.laborPaidAmount > formData.laborCost) {
+      alert('يجب أن يكون المدفوع للعمال بين صفر وإجمالي أجرتهم');
+      return;
+    }
     const computedPaymentStatus: PaymentStatus = formData.paidAmount <= 0 ? 'آجل (غير مدفوع)' : formData.paidAmount >= totalAmount ? 'مدفوع بالكامل' : 'دفعة جزئية';
 
     const salePayload = {
@@ -170,6 +181,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
       weightPerUnitKg: formData.unit === 'كيلوغرام' ? undefined : Number(formData.weightPerUnitKg),
       unitPrice: Number(formData.unitPrice),
       laborCost: Number(formData.laborCost),
+      laborPaidAmount: Number(formData.laborPaidAmount),
       totalAmount,
       netAmount,
       paidAmount: Number(formData.paidAmount),
@@ -776,6 +788,22 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       onChange={(e) => setFormData({ ...formData, laborCost: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 text-sm font-mono bg-white border border-amber-300 text-amber-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600"
                     />
+                  </div>
+                  <div>
+                    <label htmlFor={laborPaidAmountId} className="block text-[11px] font-semibold text-stone-700 mb-1">
+                      المدفوع للعمال ({currencySymbol})
+                    </label>
+                    <input
+                      id={laborPaidAmountId}
+                      type="number"
+                      step="any"
+                      min="0"
+                      max={formData.laborCost}
+                      value={formData.laborPaidAmount}
+                      onChange={(e) => setFormData({ ...formData, laborPaidAmount: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 text-sm font-mono bg-white border border-emerald-300 text-emerald-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                    />
+                    <span className="text-[10px] text-stone-500">سيُضاف تلقائياً إلى سجل أجور العمال</span>
                   </div>
                 </div>
 

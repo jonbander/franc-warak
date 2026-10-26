@@ -1,4 +1,5 @@
 import React from 'react';
+import { AppTab } from '../types';
 import { 
   Home, 
   Coins, 
@@ -8,8 +9,8 @@ import {
 } from 'lucide-react';
 
 interface MobileTabBarProps {
-  currentTab: 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator';
-  setCurrentTab: (tab: 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator') => void;
+  currentTab: AppTab;
+  setCurrentTab: (tab: AppTab) => void;
   onOpenAddSale: () => void;
   salesCount: number;
   expensesCount: number;

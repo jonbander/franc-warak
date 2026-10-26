@@ -81,7 +81,14 @@ export const loadSettings = (): SeasonSettings => {
       saveSettings(INITIAL_SETTINGS);
       return INITIAL_SETTINGS;
     }
-    return JSON.parse(raw);
+    const stored = JSON.parse(raw) as Partial<SeasonSettings>;
+    const settings: SeasonSettings = {
+      ...INITIAL_SETTINGS,
+      ...stored,
+      farmerName: stored.farmerName === 'أبو أحمد البستاني' ? '' : (stored.farmerName || ''),
+    };
+    saveSettings(settings);
+    return settings;
   } catch (e) {
     console.error('Error loading settings from storage', e);
     return INITIAL_SETTINGS;

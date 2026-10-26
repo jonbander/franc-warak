@@ -55,7 +55,9 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
                 <span className="font-bold text-lg">{settings.farmName}</span>
               </div>
               <p className="text-xs text-stone-500 mt-1">{settings.seasonName}</p>
-              <p className="text-xs text-stone-500">المزارع المسؤول: {settings.farmerName}</p>
+              {settings.farmerName.trim() && (
+                <p className="text-xs text-stone-500">المزارع المسؤول: {settings.farmerName}</p>
+              )}
             </div>
 
             <div className="text-left font-mono">

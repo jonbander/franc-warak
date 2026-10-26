@@ -12,7 +12,7 @@ import {
   Calendar,
   Sparkles
 } from 'lucide-react';
-import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../types';
+import { AppTab, SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
 import { getSaleKgEquivalent } from '../utils/units';
 import vineyardImage from '../assets/images/vineyard_grape_leaves_1792997175000.jpg';
@@ -22,7 +22,7 @@ interface DashboardViewProps {
   expenses: ExpenseRecord[];
   workerWages: WorkerWageRecord[];
   settings: SeasonSettings;
-  onNavigate: (tab: 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator') => void;
+  onNavigate: (tab: AppTab) => void;
   onOpenAddSale: () => void;
   onOpenAddExpense: () => void;
   onOpenAddWorker: () => void;
@@ -107,8 +107,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span>{settings.seasonName}</span>
               <span aria-hidden="true">·</span>
               <span>{settings.farmName}</span>
-              <span aria-hidden="true">·</span>
-              <span>المزارع: {settings.farmerName}</span>
+              {settings.farmerName.trim() && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>المزارع: {settings.farmerName}</span>
+                </>
+              )}
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               إدارة موسم ورق العنب الفرنسي

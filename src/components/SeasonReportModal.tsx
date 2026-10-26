@@ -93,7 +93,8 @@ export const SeasonReportModal: React.FC<SeasonReportModalProps> = ({
                 التقرير المالي لموسم ورق العنب الفرنسي ({settings.seasonName})
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                المزارع المسؤول: {settings.farmerName} · الموقع: {settings.location}
+                {settings.farmerName.trim() && <>المزارع المسؤول: {settings.farmerName} · </>}
+                الموقع: {settings.location}
               </p>
             </div>
 

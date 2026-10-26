@@ -14,7 +14,7 @@ export const AVAILABLE_CURRENCIES: Currency[] = [
 export const INITIAL_SETTINGS: SeasonSettings = {
   seasonName: 'موسم قطاف ورق العنب الفرنسي 2025',
   farmName: 'كروم الذهب الأخضر',
-  farmerName: 'أبو أحمد البستاني',
+  farmerName: '',
   location: 'مزارع السهل الغربي',
   currency: '$',
   targetHarvestKg: 4000,

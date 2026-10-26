@@ -16,6 +16,8 @@ export type PaymentStatus = 'مدفوع بالكامل' | 'دفعة جزئية' 
 
 export type PaymentMethod = 'نقدي (كاش)' | 'حوالة بنكية' | 'شيك' | 'دفع آجل';
 
+export type AppTab = 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator' | 'settings' | 'about';
+
 export interface SaleRecord {
   id: string;
   date: string;
@@ -28,6 +30,8 @@ export interface SaleRecord {
   weightPerUnitKg?: number;
   unitPrice: number;
   laborCost: number; // أجار العمال المرتبط بالعملية
+  /** Amount already paid to workers for this sale; separate from customer payments. */
+  laborPaidAmount?: number;
   totalAmount: number; // الكمية × السعر الإفرادي
   netAmount: number; // المجموع - أجار العمال
   paidAmount: number;

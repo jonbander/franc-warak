@@ -6,16 +6,18 @@
 import React, { useState, useEffect } from 'react';
 import { MobileTopBar } from './components/MobileTopBar';
 import { MobileTabBar } from './components/MobileTabBar';
-import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { DashboardView } from './components/DashboardView';
 import { SalesView } from './components/SalesView';
 import { ExpensesView } from './components/ExpensesView';
 import { WorkersView } from './components/WorkersView';
 import { CalculatorView } from './components/CalculatorView';
+import { SettingsView } from './components/SettingsView';
+import { AboutView } from './components/AboutView';
 import { SaleReceiptModal } from './components/SaleReceiptModal';
 import { SeasonReportModal } from './components/SeasonReportModal';
 
-import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from './types';
+import { AppTab, SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from './types';
+import { upsertSaleWorkerWage } from './utils/saleWorkerWage';
 import {
   loadSales,
   saveSales,
@@ -32,7 +34,7 @@ import { Wifi, Battery, Signal, Smartphone, Monitor } from 'lucide-react';
 
 export default function App() {
   // Navigation tab state
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<AppTab>('dashboard');
 
   // Core Data States
   const [sales, setSales] = useState<SaleRecord[]>([]);
@@ -67,20 +69,29 @@ export default function App() {
       createdAt: new Date().toISOString(),
     };
     const updated = [newSale, ...sales];
+    const updatedWages = upsertSaleWorkerWage(workerWages, newSale);
     setSales(updated);
+    setWorkerWages(updatedWages);
     saveSales(updated);
+    saveWorkerWages(updatedWages);
   };
 
   const handleUpdateSale = (updatedSale: SaleRecord) => {
     const updated = sales.map((s) => (s.id === updatedSale.id ? updatedSale : s));
+    const updatedWages = upsertSaleWorkerWage(workerWages, updatedSale);
     setSales(updated);
+    setWorkerWages(updatedWages);
     saveSales(updated);
+    saveWorkerWages(updatedWages);
   };
 
   const handleDeleteSale = (id: string) => {
     const updated = sales.filter((s) => s.id !== id);
+    const updatedWages = workerWages.filter((wage) => wage.relatedSaleId !== id);
     setSales(updated);
+    setWorkerWages(updatedWages);
     saveSales(updated);
+    saveWorkerWages(updatedWages);
   };
 
   // Handlers for Expenses
@@ -121,6 +132,18 @@ export default function App() {
 
   const handleUpdateWorkerWage = (updatedWage: WorkerWageRecord) => {
     const updated = workerWages.map((w) => (w.id === updatedWage.id ? updatedWage : w));
+    if (updatedWage.relatedSaleId) {
+      const updatedSales = sales.map((sale) => sale.id === updatedWage.relatedSaleId
+        ? {
+            ...sale,
+            laborCost: updatedWage.totalWage,
+            laborPaidAmount: updatedWage.paidWage,
+            netAmount: Number((sale.totalAmount - updatedWage.totalWage).toFixed(2)),
+          }
+        : sale);
+      setSales(updatedSales);
+      saveSales(updatedSales);
+    }
     setWorkerWages(updated);
     saveWorkerWages(updated);
   };
@@ -134,6 +157,12 @@ export default function App() {
   // Change Currency
   const handleCurrencyChange = (newCurrency: string) => {
     const updated = { ...settings, currency: newCurrency };
+    setSettings(updated);
+    saveSettings(updated);
+  };
+
+  const handleFarmerNameChange = (farmerName: string) => {
+    const updated = { ...settings, farmerName };
     setSettings(updated);
     saveSettings(updated);
   };
@@ -159,9 +188,6 @@ export default function App() {
   // Main Mobile App Content Body
   const appContent = (
     <div className="flex flex-col min-h-full bg-stone-50 text-stone-900 pb-24">
-      {/* PWA Home Screen Install Banner */}
-      <PWAInstallBanner />
-
       {/* Mobile Top App Bar */}
       <MobileTopBar
         currentTab={currentTab}
@@ -203,6 +229,7 @@ export default function App() {
         {currentTab === 'sales' && (
           <SalesView
             sales={sales}
+            workerWages={workerWages}
             currencySymbol={settings.currency}
             onAddSale={handleAddSale}
             onUpdateSale={handleUpdateSale}
@@ -246,6 +273,10 @@ export default function App() {
             onApplyToNewSale={handleApplyCalculatorToSale}
           />
         )}
+        {currentTab === 'settings' && (
+          <SettingsView settings={settings} onFarmerNameChange={handleFarmerNameChange} />
+        )}
+        {currentTab === 'about' && <AboutView />}
       </main>
 
       {/* Fixed Native Mobile Bottom Tab Bar */}

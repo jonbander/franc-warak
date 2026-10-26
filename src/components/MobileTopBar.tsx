@@ -8,14 +8,16 @@ import {
   Smartphone, 
   Monitor, 
   Menu, 
-  X 
+  X,
+  Settings,
+  Info
 } from 'lucide-react';
 import { AVAILABLE_CURRENCIES } from '../data/initialData';
-import { SeasonSettings } from '../types';
+import { AppTab, SeasonSettings } from '../types';
 
 interface MobileTopBarProps {
   currentTab: string;
-  setCurrentTab: (tab: 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator') => void;
+  setCurrentTab: (tab: AppTab) => void;
   settings: SeasonSettings;
   onCurrencyChange: (currency: string) => void;
   onOpenReport: () => void;
@@ -52,7 +54,7 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
                 ورق العنب الفرنسي
               </h1>
               <span className="text-[10px] text-stone-500 block truncate font-mono">
-                {settings.farmName}
+                {settings.farmerName || settings.farmName}
               </span>
             </div>
           </div>
@@ -138,6 +140,38 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
             </div>
 
             <div className="space-y-1 text-xs">
+              <button
+                onClick={() => {
+                  setCurrentTab('settings');
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 text-stone-800 hover:bg-stone-50 rounded-xl text-right font-medium transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-stone-900">إعدادات المزارع</div>
+                  <div className="text-[11px] text-stone-500">إدخال اسم المزارع الذي يظهر في الفواتير</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentTab('about');
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 text-stone-800 hover:bg-stone-50 rounded-xl text-right font-medium transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                  <Info className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-stone-900">حول التطبيق</div>
+                  <div className="text-[11px] text-stone-500">رقم النسخة ومعلومات التطبيق</div>
+                </div>
+              </button>
+
               <button
                 onClick={() => {
                   onOpenReport();

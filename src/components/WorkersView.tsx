@@ -118,6 +118,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
       totalWage: calculatedTotalWage,
       paidWage: Number(formData.paidWage),
       remainingWage,
+      relatedSaleId: editingWage?.relatedSaleId,
       notes: formData.notes.trim(),
     };
 
