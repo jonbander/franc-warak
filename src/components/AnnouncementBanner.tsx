@@ -15,7 +15,10 @@ export const AnnouncementBanner: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
+    let requestInFlight = false;
+    const refreshAnnouncement = async () => {
+      if (requestInFlight || document.visibilityState === 'hidden') return;
+      requestInFlight = true;
       try {
         await loadFirebaseConfig();
         const database = await getFirebaseDatabase();
@@ -24,10 +27,18 @@ export const AnnouncementBanner: React.FC = () => {
         if (!cancelled) setAnnouncement(snapshot.exists() ? snapshot.val() as Announcement : null);
       } catch {
         // Firebase can remain unconfigured while the rest of the app works offline.
+      } finally {
+        requestInFlight = false;
       }
-    })();
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void refreshAnnouncement();
+    };
+    void refreshAnnouncement();
+    document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       cancelled = true;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
 
