@@ -1,0 +1,206 @@
+import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../types';
+import { INITIAL_SALES, INITIAL_EXPENSES, INITIAL_WORKER_WAGES, INITIAL_SETTINGS } from '../data/initialData';
+
+const STORAGE_KEYS = {
+  SALES: 'grape_season_sales_v1',
+  EXPENSES: 'grape_season_expenses_v1',
+  WORKERS: 'grape_season_workers_v1',
+  SETTINGS: 'grape_season_settings_v1',
+};
+
+export const loadSales = (): SaleRecord[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SALES);
+    if (!raw) {
+      saveSales(INITIAL_SALES);
+      return INITIAL_SALES;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading sales from storage', e);
+    return INITIAL_SALES;
+  }
+};
+
+export const saveSales = (sales: SaleRecord[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
+  } catch (e) {
+    console.error('Error saving sales to storage', e);
+  }
+};
+
+export const loadExpenses = (): ExpenseRecord[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.EXPENSES);
+    if (!raw) {
+      saveExpenses(INITIAL_EXPENSES);
+      return INITIAL_EXPENSES;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading expenses from storage', e);
+    return INITIAL_EXPENSES;
+  }
+};
+
+export const saveExpenses = (expenses: ExpenseRecord[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+  } catch (e) {
+    console.error('Error saving expenses to storage', e);
+  }
+};
+
+export const loadWorkerWages = (): WorkerWageRecord[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.WORKERS);
+    if (!raw) {
+      saveWorkerWages(INITIAL_WORKER_WAGES);
+      return INITIAL_WORKER_WAGES;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading worker wages from storage', e);
+    return INITIAL_WORKER_WAGES;
+  }
+};
+
+export const saveWorkerWages = (wages: WorkerWageRecord[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(wages));
+  } catch (e) {
+    console.error('Error saving worker wages to storage', e);
+  }
+};
+
+export const loadSettings = (): SeasonSettings => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (!raw) {
+      saveSettings(INITIAL_SETTINGS);
+      return INITIAL_SETTINGS;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading settings from storage', e);
+    return INITIAL_SETTINGS;
+  }
+};
+
+export const saveSettings = (settings: SeasonSettings): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  } catch (e) {
+    console.error('Error saving settings to storage', e);
+  }
+};
+
+// Export all season data to a JSON backup file
+export const exportSeasonDataJSON = (): void => {
+  const data = {
+    settings: loadSettings(),
+    sales: loadSales(),
+    expenses: loadExpenses(),
+    workers: loadWorkerWages(),
+    exportedAt: new Date().toISOString(),
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `بيانات_موسم_ورق_العنب_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// Export sales to CSV for Excel
+export const exportSalesToCSV = (sales: SaleRecord[], currencySymbol: string): void => {
+  const headers = [
+    'المعرف',
+    'التاريخ',
+    'اسم المشتري / التاجر',
+    'الهاتف',
+    'الصنف',
+    'الكمية',
+    'الوحدة',
+    `السعر الإفرادي (${currencySymbol})`,
+    `أجار العمال (${currencySymbol})`,
+    `مجموع البيع (${currencySymbol})`,
+    `صافي الربح (${currencySymbol})`,
+    'حالة الدفع',
+    'طريقة الدفع',
+    'الورشة والعمال',
+    'ملاحظات'
+  ];
+
+  const rows = sales.map(s => [
+    s.id,
+    s.date,
+    `"${s.buyerName.replace(/"/g, '""')}"`,
+    s.buyerPhone || '',
+    `"${s.grapeVariety}"`,
+    s.quantity,
+    s.unit,
+    s.unitPrice,
+    s.laborCost,
+    s.totalAmount,
+    s.netAmount,
+    s.paymentStatus,
+    s.paymentMethod,
+    `"${(s.workerNotes || '').replace(/"/g, '""')}"`,
+    `"${(s.notes || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `سجل_مبيعات_ورق_العنب_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// Export expenses to CSV for Excel
+export const exportExpensesToCSV = (expenses: ExpenseRecord[], currencySymbol: string): void => {
+  const headers = [
+    'المعرف',
+    'التاريخ',
+    'بيان المصروف',
+    'التصنيف',
+    `المبلغ (${currencySymbol})`,
+    'المدفوع له',
+    'طريقة الدفع',
+    'ملاحظات'
+  ];
+
+  const rows = expenses.map(e => [
+    e.id,
+    e.date,
+    `"${e.title.replace(/"/g, '""')}"`,
+    `"${e.category}"`,
+    e.amount,
+    `"${e.paidTo.replace(/"/g, '""')}"`,
+    e.paymentMethod,
+    `"${(e.notes || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `سجل_مصاريف_الموسم_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// Reset to factory sample data
+export const resetToInitialData = (): void => {
+  saveSales(INITIAL_SALES);
+  saveExpenses(INITIAL_EXPENSES);
+  saveWorkerWages(INITIAL_WORKER_WAGES);
+  saveSettings(INITIAL_SETTINGS);
+};

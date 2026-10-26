@@ -1,0 +1,6 @@
+{
+  "name": "إدارة موسم ورق العنب الفرنسي",
+  "description": "نظام لإدارة مبيعات موسم ورق العنب الفرنسي وحساب أجور العمال والمصاريف التشغيلية وصافي الأرباح",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
