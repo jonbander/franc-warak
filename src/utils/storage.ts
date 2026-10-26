@@ -1,4 +1,4 @@
-import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings, SeasonBackup, SeasonArchive } from '../types';
+import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../types';
 import { INITIAL_SALES, INITIAL_EXPENSES, INITIAL_WORKER_WAGES, INITIAL_SETTINGS } from '../data/initialData';
 
 const STORAGE_KEYS = {
@@ -6,10 +6,7 @@ const STORAGE_KEYS = {
   EXPENSES: 'grape_season_expenses_v1',
   WORKERS: 'grape_season_workers_v1',
   SETTINGS: 'grape_season_settings_v1',
-  ARCHIVES: 'grape_season_archives_v1',
 };
-
-const normalizeCurrency = (currency: unknown): string => currency === '$' ? '$' : 'ل.س';
 
 const LEGACY_SAMPLE_IDS = {
   sales: new Set(['sale-001', 'sale-002', 'sale-003', 'sale-004', 'sale-005', 'sale-006']),
@@ -100,21 +97,11 @@ export const loadSettings = (): SeasonSettings => {
       return INITIAL_SETTINGS;
     }
     const stored = JSON.parse(raw) as Partial<SeasonSettings>;
-    const defaultSeasonMatch = (stored.seasonName || '').match(/^موسم(?: قطاف)? ورق العنب الفرنسي (\d{4})$/);
-    const hasSeasonRecords = [STORAGE_KEYS.SALES, STORAGE_KEYS.EXPENSES, STORAGE_KEYS.WORKERS].some((key) => {
-      try {
-        const records = JSON.parse(localStorage.getItem(key) || '[]') as unknown;
-        return Array.isArray(records) && records.length > 0;
-      } catch {
-        return false;
-      }
-    });
-    const keepPreviousSeasonForArchive = Boolean(defaultSeasonMatch && Number(defaultSeasonMatch[1]) < new Date().getFullYear() && hasSeasonRecords);
+    const isDefaultSeasonName = /^موسم(?: قطاف)? ورق العنب الفرنسي \d{4}$/.test(stored.seasonName || '');
     const settings: SeasonSettings = {
       ...INITIAL_SETTINGS,
       ...stored,
-      currency: normalizeCurrency(stored.currency),
-      seasonName: defaultSeasonMatch && !keepPreviousSeasonForArchive ? INITIAL_SETTINGS.seasonName : (stored.seasonName || INITIAL_SETTINGS.seasonName),
+      seasonName: isDefaultSeasonName ? INITIAL_SETTINGS.seasonName : (stored.seasonName || INITIAL_SETTINGS.seasonName),
       farmName: stored.farmName === 'كروم الذهب الأخضر' ? '' : (stored.farmName || ''),
       farmerName: stored.farmerName === 'أبو أحمد البستاني' ? '' : (stored.farmerName || ''),
       location: stored.location === 'مزارع السهل الغربي' ? '' : (stored.location || ''),
@@ -131,7 +118,7 @@ export const loadSettings = (): SeasonSettings => {
 
 export const saveSettings = (settings: SeasonSettings): void => {
   try {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ ...settings, currency: normalizeCurrency(settings.currency) }));
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   } catch (e) {
     console.error('Error saving settings to storage', e);
   }
@@ -140,8 +127,6 @@ export const saveSettings = (settings: SeasonSettings): void => {
 // Export all season data to a JSON backup file
 export const exportSeasonDataJSON = (): void => {
   const data = {
-    format: 'franc-warak-season-backup',
-    formatVersion: 1,
     settings: loadSettings(),
     sales: loadSales(),
     expenses: loadExpenses(),
@@ -153,129 +138,9 @@ export const exportSeasonDataJSON = (): void => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `نسخة_احتياطية_ورق_العنب_${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `بيانات_موسم_ورق_العنب_${new Date().toISOString().split('T')[0]}.json`;
   a.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-};
-
-const isRecordArray = (value: unknown): value is Array<Record<string, unknown>> =>
-  Array.isArray(value) && value.every((item) => item !== null && typeof item === 'object' && !Array.isArray(item) && typeof item.id === 'string' && item.id.length > 0);
-
-const hasStringFields = (records: Array<Record<string, unknown>>, fields: string[]): boolean =>
-  records.every((record) => fields.every((field) => typeof record[field] === 'string'));
-
-const hasNumberFields = (records: Array<Record<string, unknown>>, fields: string[]): boolean =>
-  records.every((record) => fields.every((field) => typeof record[field] === 'number' && Number.isFinite(record[field])));
-
-export const parseSeasonBackupJSON = (text: string): SeasonBackup => {
-  const parsed = JSON.parse(text) as Record<string, unknown>;
-  if (!parsed || typeof parsed !== 'object' || !parsed.settings || typeof parsed.settings !== 'object' ||
-      !isRecordArray(parsed.sales) || !isRecordArray(parsed.expenses) || !isRecordArray(parsed.workers)) {
-    throw new Error('الملف ليس نسخة احتياطية صالحة لبيانات الموسم.');
-  }
-  if ((parsed.format !== undefined && parsed.format !== 'franc-warak-season-backup') ||
-      (parsed.formatVersion !== undefined && parsed.formatVersion !== 1)) {
-    throw new Error('صيغة النسخة الاحتياطية غير مدعومة.');
-  }
-  const sales = parsed.sales;
-  const expenses = parsed.expenses;
-  const workers = parsed.workers;
-  if (!hasStringFields(sales, ['date', 'buyerName', 'grapeVariety', 'unit', 'paymentStatus', 'paymentMethod', 'createdAt']) ||
-      !hasNumberFields(sales, ['quantity', 'unitPrice', 'laborCost', 'totalAmount', 'netAmount', 'paidAmount']) ||
-      !hasStringFields(expenses, ['date', 'title', 'category', 'paidTo', 'paymentMethod', 'createdAt']) ||
-      !hasNumberFields(expenses, ['amount']) ||
-      !hasStringFields(workers, ['date', 'workerOrLeaderName', 'workType', 'createdAt']) ||
-      !hasNumberFields(workers, ['workerCount', 'unitsOrHours', 'ratePerUnit', 'totalWage', 'paidWage', 'remainingWage'])) {
-    throw new Error('تحتوي النسخة على سجل ناقص أو غير صالح. لم تتغير بيانات التطبيق.');
-  }
-  const settings = { ...INITIAL_SETTINGS, ...(parsed.settings as Partial<SeasonSettings>) };
-  if (typeof settings.seasonName !== 'string' || typeof settings.farmerName !== 'string' ||
-      typeof settings.farmName !== 'string' || typeof settings.location !== 'string' ||
-      typeof settings.seasonStartDate !== 'string' || typeof settings.targetHarvestKg !== 'number' || !Number.isFinite(settings.targetHarvestKg)) {
-    throw new Error('بيانات إعدادات المزارع في الملف غير مكتملة.');
-  }
-  return {
-    settings: { ...settings, currency: normalizeCurrency(settings.currency) },
-    sales: sales as unknown as SaleRecord[],
-    expenses: expenses as unknown as ExpenseRecord[],
-    workers: workers as unknown as WorkerWageRecord[],
-  };
-};
-
-export const importSeasonBackup = (backup: SeasonBackup): void => {
-  const normalized = { ...backup.settings, currency: normalizeCurrency(backup.settings.currency) };
-  const entries: Array<[string, string]> = [
-    [STORAGE_KEYS.SALES, JSON.stringify(backup.sales)],
-    [STORAGE_KEYS.EXPENSES, JSON.stringify(backup.expenses)],
-    [STORAGE_KEYS.WORKERS, JSON.stringify(backup.workers)],
-    [STORAGE_KEYS.SETTINGS, JSON.stringify(normalized)],
-  ];
-  const previous = entries.map(([key]) => [key, localStorage.getItem(key)] as const);
-  try {
-    entries.forEach(([key, value]) => localStorage.setItem(key, value));
-  } catch (error) {
-    previous.forEach(([key, value]) => value === null ? localStorage.removeItem(key) : localStorage.setItem(key, value));
-    throw error;
-  }
-};
-
-export const loadSeasonArchives = (): SeasonArchive[] => {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEYS.ARCHIVES) || '[]') as unknown;
-    return Array.isArray(parsed) ? parsed.filter((item): item is SeasonArchive =>
-      item !== null && typeof item === 'object' && typeof item.id === 'string' &&
-      typeof item.archivedAt === 'string' && Array.isArray(item.sales) &&
-      Array.isArray(item.expenses) && Array.isArray(item.workers) && item.settings !== null && typeof item.settings === 'object') : [];
-  } catch (error) {
-    console.error('Error loading season archives', error);
-    return [];
-  }
-};
-
-export const archiveCurrentSeason = (): SeasonArchive => {
-  const settings = loadSettings();
-  const archive: SeasonArchive = {
-    id: `archive-${crypto.randomUUID()}`,
-    seasonName: settings.seasonName,
-    archivedAt: new Date().toISOString(),
-    settings,
-    sales: loadSales(),
-    expenses: loadExpenses(),
-    workers: loadWorkerWages(),
-  };
-  const archiveKeyBefore = localStorage.getItem(STORAGE_KEYS.ARCHIVES);
-  const archives = [archive, ...loadSeasonArchives()];
-  // Commit the recoverable snapshot before resetting the active season.
-  localStorage.setItem(STORAGE_KEYS.ARCHIVES, JSON.stringify(archives));
-  try {
-    importSeasonBackup({
-      settings: {
-        ...INITIAL_SETTINGS,
-        seasonName: `موسم ورق العنب الفرنسي ${new Date().getFullYear()}`,
-        farmName: settings.farmName,
-        farmerName: settings.farmerName,
-        location: settings.location,
-        currency: settings.currency,
-      },
-      sales: [],
-      expenses: [],
-      workers: [],
-    });
-  } catch (error) {
-    if (archiveKeyBefore === null) localStorage.removeItem(STORAGE_KEYS.ARCHIVES);
-    else localStorage.setItem(STORAGE_KEYS.ARCHIVES, archiveKeyBefore);
-    throw error;
-  }
-  return archive;
-};
-
-export const restoreSeasonArchive = (archive: SeasonArchive): void => {
-  importSeasonBackup(archive);
-};
-
-export const deleteSeasonArchive = (archiveId: string): void => {
-  const remaining = loadSeasonArchives().filter((archive) => archive.id !== archiveId);
-  localStorage.setItem(STORAGE_KEYS.ARCHIVES, JSON.stringify(remaining));
+  URL.revokeObjectURL(url);
 };
 
 // Export sales to CSV for Excel

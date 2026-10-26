@@ -3,29 +3,10 @@
     ".read": false,
     ".write": false,
     "publicChat": {
-      "config": {
-        ".read": "auth != null",
-        ".write": "auth != null && auth.uid === 'nLQ00ZiJqnP7unDvPeAiDbtBsuX2'",
-        ".validate": "newData.hasChildren(['enabled', 'readOnly'])",
-        "enabled": { ".validate": "newData.isBoolean()" },
-        "readOnly": { ".validate": "newData.isBoolean()" },
-        "updatedAt": { ".validate": "newData.isNumber()" },
-        "$other": { ".validate": false }
-      },
-      "notice": {
-        ".read": "auth != null",
-        ".write": "auth != null && auth.uid === 'nLQ00ZiJqnP7unDvPeAiDbtBsuX2'",
-        ".validate": "newData.hasChildren(['active', 'text', 'updatedAt']) && newData.child('active').isBoolean() && newData.child('text').isString() && newData.child('text').val().length <= 500 && newData.child('updatedAt').isNumber()",
-        "active": { ".validate": "newData.isBoolean()" },
-        "text": { ".validate": "newData.isString() && newData.val().length <= 500" },
-        "updatedAt": { ".validate": "newData.isNumber()" },
-        "$other": { ".validate": false }
-      },
       "messages": {
         ".read": "auth != null",
-        ".write": "auth != null && auth.uid === 'nLQ00ZiJqnP7unDvPeAiDbtBsuX2'",
         "$messageId": {
-          ".write": "auth != null && !data.exists() && newData.child('senderUid').val() === auth.uid && root.child('publicChat/config/enabled').val() != false && root.child('publicChat/config/readOnly').val() != true",
+          ".write": "auth != null && !data.exists() && newData.child('senderUid').val() === auth.uid",
           ".validate": "newData.hasChildren(['senderUid', 'senderName', 'text', 'createdAt']) && newData.child('senderUid').isString() && newData.child('senderName').isString() && newData.child('senderName').val().length > 0 && newData.child('senderName').val().length <= 60 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('createdAt').isNumber()",
           "senderUid": { ".validate": "newData.val() === auth.uid" },
           "senderName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },

@@ -90,16 +90,3 @@ export interface SeasonSettings {
   targetHarvestKg: number;
   seasonStartDate: string;
 }
-
-export interface SeasonBackup {
-  settings: SeasonSettings;
-  sales: SaleRecord[];
-  expenses: ExpenseRecord[];
-  workers: WorkerWageRecord[];
-}
-
-export interface SeasonArchive extends SeasonBackup {
-  id: string;
-  seasonName: string;
-  archivedAt: string;
-}

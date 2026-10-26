@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Franc Warak Announcement Admin
- * Description: Firebase-secured announcement and public chat admin page shortcode for Franc Warak.
- * Version: 1.1.0
+ * Description: Firebase-secured announcement admin page shortcode for Franc Warak.
+ * Version: 1.0.0
  * Author: Ahmed
  */
 
@@ -33,7 +33,6 @@ add_shortcode('franc_warak_announcement_admin', function () {
         .fw-admin input[type=color]{width:56px;height:42px;padding:3px;border:1px solid #d6d3d1;border-radius:8px;background:white;cursor:pointer}.fw-admin button{border:0;border-radius:10px;padding:11px 17px;font:inherit;font-weight:750;cursor:pointer}
         .fw-admin .fw-primary{background:#14532d;color:#fff}.fw-admin .fw-secondary{background:#f5f5f4;color:#292524}.fw-admin .fw-danger{color:#991b1b}.fw-admin .fw-status{padding:10px 12px;border-radius:10px;background:#f5f5f4;white-space:pre-wrap;min-height:44px}.fw-admin .fw-error{color:#b91c1c}.fw-admin .fw-hidden{display:none!important}
         .fw-admin .fw-preview{margin-top:18px;padding:12px 14px;border:1px solid #fcd34d;border-radius:12px;background:#fffbeb;overflow:hidden;color:#451a03}.fw-admin .fw-preview-text{display:block;white-space:pre-wrap;overflow-wrap:anywhere}.fw-admin .fw-preview.is-scroll .fw-preview-text{direction:rtl;white-space:nowrap;overflow-wrap:normal;animation:fw-admin-ltr 12s linear infinite}@keyframes fw-admin-ltr{from{transform:translateX(calc(-100% - 100vw))}to{transform:translateX(calc(100vw + 100%))}}
-        .fw-admin .fw-divider{border:0;border-top:1px solid #e7e5e4;margin:26px 0}.fw-admin .fw-admin-section{padding:16px 0 4px}.fw-admin .fw-danger-button{background:#991b1b;color:#fff}.fw-admin .fw-switch-row{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0}.fw-admin .fw-switch-row label{display:flex;align-items:center;gap:8px;margin:0}.fw-admin .fw-notice-text{min-height:90px}
         @media(prefers-reduced-motion:reduce){.fw-admin .fw-preview.is-scroll .fw-preview-text{animation:none;white-space:normal;transform:none}}
       </style>
       <div class="fw-card">
@@ -55,29 +54,8 @@ add_shortcode('franc_warak_announcement_admin', function () {
           <div class="fw-row" style="margin-top:18px">
             <button class="fw-primary fw-save" type="button">حفظ ونشر</button>
             <button class="fw-secondary fw-hide-ad" type="button">إخفاء الإعلان</button>
+            <button class="fw-secondary fw-logout" type="button">تسجيل الخروج</button>
           </div>
-
-          <hr class="fw-divider">
-          <section class="fw-admin-section" aria-labelledby="fw-chat-admin-title">
-            <h2 id="fw-chat-admin-title">إدارة غرفة الدردشة</h2>
-            <p>تُطبّق حالة الغرفة على الإرسال من خلال قواعد Firebase، ويمكن للمستخدمين مواصلة قراءة الرسائل عند الإيقاف.</p>
-            <div class="fw-switch-row">
-              <label><input class="fw-chat-enabled" type="checkbox" checked><span>السماح بالدردشة</span></label>
-              <label><input class="fw-chat-readonly" type="checkbox"><span>وضع القراءة فقط</span></label>
-            </div>
-            <button class="fw-primary fw-save-chat" type="button">حفظ حالة الدردشة</button>
-
-            <label for="fw-chat-notice">تنبيه يظهر أعلى غرفة الدردشة (حتى 500 حرف)</label>
-            <textarea id="fw-chat-notice" class="fw-chat-notice" maxlength="500" placeholder="اكتب التنبيه الإداري…"></textarea>
-            <div class="fw-switch-row">
-              <label><input class="fw-notice-active" type="checkbox"><span>إظهار التنبيه</span></label>
-            </div>
-            <div class="fw-row">
-              <button class="fw-primary fw-save-chat-notice" type="button">حفظ التنبيه</button>
-              <button class="fw-danger-button fw-clear-chat" type="button">مسح سجل الدردشة</button>
-            </div>
-          </section>
-          <div class="fw-row" style="margin-top:22px"><button class="fw-secondary fw-logout" type="button">تسجيل الخروج</button></div>
         </section>
         <p class="fw-status" role="status" aria-live="polite">جارٍ الاتصال...</p>
       </div>
@@ -118,9 +96,6 @@ add_shortcode('franc_warak_announcement_admin', function () {
             const auth = getAuth(app);
             const database = getDatabase(app, firebaseConfig.databaseURL);
             const announcementRef = ref(database, 'announcement/current');
-            const chatConfigRef = ref(database, 'publicChat/config');
-            const chatNoticeRef = ref(database, 'publicChat/notice');
-            const chatMessagesRef = ref(database, 'publicChat/messages');
             const loginSection = panel.querySelector('.fw-login');
             const editorSection = panel.querySelector('.fw-editor');
 
@@ -135,14 +110,6 @@ add_shortcode('franc_warak_announcement_admin', function () {
                 colorEl.value = /^#[0-9a-fA-F]{6}$/.test(value.textColor || '') ? value.textColor : '#451a03';
                 scrollEl.checked = value.scroll === true;
                 activeEl.checked = value.active === true;
-                const chatConfigSnapshot = await get(chatConfigRef);
-                const chatConfig = chatConfigSnapshot.val() || {};
-                panel.querySelector('.fw-chat-enabled').checked = chatConfig.enabled !== false;
-                panel.querySelector('.fw-chat-readonly').checked = chatConfig.readOnly === true;
-                const noticeSnapshot = await get(chatNoticeRef);
-                const notice = noticeSnapshot.val() || {};
-                panel.querySelector('.fw-chat-notice').value = typeof notice.text === 'string' ? notice.text : '';
-                panel.querySelector('.fw-notice-active').checked = notice.active === true;
                 updatePreview(); setStatus('تم تسجيل الدخول.');
               } catch (error) { setStatus('تعذر تحميل الإعدادات: ' + error.message, true); }
             });
@@ -162,30 +129,6 @@ add_shortcode('franc_warak_announcement_admin', function () {
             };
             panel.querySelector('.fw-save').addEventListener('click', () => publish(activeEl.checked));
             panel.querySelector('.fw-hide-ad').addEventListener('click', () => publish(false));
-            panel.querySelector('.fw-save-chat').addEventListener('click', async () => {
-              const enabled = panel.querySelector('.fw-chat-enabled').checked;
-              const readOnly = panel.querySelector('.fw-chat-readonly').checked;
-              try {
-                await set(chatConfigRef, { enabled, readOnly, updatedAt: serverTimestamp() });
-                setStatus(!enabled ? 'تم إيقاف الدردشة؛ ما زالت الرسائل قابلة للقراءة.' : readOnly ? 'تم تفعيل وضع القراءة فقط.' : 'تم تفعيل الدردشة والسماح بالإرسال.');
-              } catch (error) { setStatus('تعذر حفظ حالة الدردشة: ' + error.message, true); }
-            });
-            panel.querySelector('.fw-save-chat-notice').addEventListener('click', async () => {
-              const text = panel.querySelector('.fw-chat-notice').value.trim();
-              const active = panel.querySelector('.fw-notice-active').checked;
-              if (active && !text) { setStatus('اكتب نص التنبيه أو أوقف خيار إظهاره.', true); return; }
-              try {
-                await set(chatNoticeRef, { active, text, updatedAt: serverTimestamp() });
-                setStatus(active ? 'تم نشر التنبيه في أعلى غرفة الدردشة.' : 'تم إخفاء التنبيه الإداري.');
-              } catch (error) { setStatus('تعذر حفظ التنبيه: ' + error.message, true); }
-            });
-            panel.querySelector('.fw-clear-chat').addEventListener('click', async () => {
-              if (!window.confirm('تحذير: سيُحذف سجل الدردشة العام لجميع المستخدمين نهائياً. هل تريد المتابعة؟')) return;
-              try {
-                await set(chatMessagesRef, null);
-                setStatus('تم مسح سجل الدردشة.');
-              } catch (error) { setStatus('تعذر مسح السجل: ' + error.message, true); }
-            });
             panel.querySelector('.fw-logout').addEventListener('click', () => signOut(auth));
           } catch (error) { setStatus('تعذر تحميل Firebase. تحقق من الاتصال وإعداد الصفحة: ' + error.message, true); }
         })();
