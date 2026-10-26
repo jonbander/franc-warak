@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { onValue, ref } from 'firebase/database';
+import { get, ref } from 'firebase/database';
 import { Megaphone, X } from 'lucide-react';
 import { getFirebaseDatabase, loadFirebaseConfig } from '../services/firebaseClient';
 
@@ -14,23 +14,20 @@ export const AnnouncementBanner: React.FC = () => {
   const [dismissedKey, setDismissedKey] = useState('');
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
     let cancelled = false;
     void (async () => {
       try {
         await loadFirebaseConfig();
         const database = await getFirebaseDatabase();
         if (cancelled) return;
-        unsubscribe = onValue(ref(database, 'announcement/current'), (snapshot) => {
-          setAnnouncement(snapshot.exists() ? snapshot.val() as Announcement : null);
-        });
+        const snapshot = await get(ref(database, 'announcement/current'));
+        if (!cancelled) setAnnouncement(snapshot.exists() ? snapshot.val() as Announcement : null);
       } catch {
         // Firebase can remain unconfigured while the rest of the app works offline.
       }
     })();
     return () => {
       cancelled = true;
-      unsubscribe?.();
     };
   }, []);
 

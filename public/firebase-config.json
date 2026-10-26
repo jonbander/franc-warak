@@ -1,8 +1,9 @@
 {
-  "apiKey": "PASTE_FIREBASE_WEB_API_KEY_HERE",
-  "authDomain": "PASTE_PROJECT_ID_HERE.firebaseapp.com",
-  "databaseURL": "https://PASTE_DATABASE_NAME.REGION.firebasedatabase.app",
-  "projectId": "PASTE_PROJECT_ID_HERE",
-  "appId": "PASTE_FIREBASE_APP_ID_HERE",
-  "messagingSenderId": ""
+  "apiKey": "AIzaSyBwOCy24qLlkCdnWhHBu722MrVM_v7e_RE",
+  "authDomain": "first22-7464f.firebaseapp.com",
+  "projectId": "first22-7464f",
+  "appId": "1:1017587333323:web:e503a882b446f3450a834e",
+  "messagingSenderId": "1017587333323",
+  "storageBucket": "first22-7464f.firebasestorage.app",
+  "databaseURL": "PASTE_REALTIME_DATABASE_URL_AFTER_DATABASE_CREATION"
 }

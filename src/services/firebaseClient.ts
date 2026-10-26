@@ -23,7 +23,8 @@ export const loadFirebaseConfig = (): Promise<FirebasePublicConfig> => {
   configPromise ??= fetch(configUrl, { cache: 'no-store' }).then(async (response) => {
     if (!response.ok) throw new Error('تعذر تحميل إعداد الاتصال بالخدمة.');
     const config = await response.json() as FirebasePublicConfig;
-    if (!config.apiKey || !config.databaseURL || !config.projectId || !config.appId || config.apiKey.startsWith('PASTE_')) {
+    if (!config.apiKey || !config.databaseURL || !config.projectId || !config.appId ||
+      [config.apiKey, config.databaseURL, config.projectId, config.appId].some((value) => value.includes('PASTE_'))) {
       throw new Error('لم يتم إعداد Firebase لهذا التطبيق بعد.');
     }
     return config;
