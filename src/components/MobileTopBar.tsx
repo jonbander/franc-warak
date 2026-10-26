@@ -169,8 +169,8 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
                   <Settings className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-stone-900">إعدادات المزارع</div>
-                  <div className="text-[11px] text-stone-500">إدخال اسم المزارع الذي يظهر في الفواتير</div>
+                  <div className="font-bold text-stone-900">إدارة المزارع</div>
+                  <div className="text-[11px] text-stone-500">بيانات المزارع والنسخ الاحتياطية والأرشيف</div>
                 </div>
               </button>
 

@@ -19,7 +19,7 @@ import { HelpView } from './components/HelpView';
 import { SaleReceiptModal } from './components/SaleReceiptModal';
 import { SeasonReportModal } from './components/SeasonReportModal';
 
-import { AppTab, SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from './types';
+import { AppTab, SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings, SeasonArchive } from './types';
 import { upsertSaleWorkerWage } from './utils/saleWorkerWage';
 import {
   loadSales,
@@ -31,6 +31,12 @@ import {
   loadSettings,
   saveSettings,
   exportSeasonDataJSON,
+  parseSeasonBackupJSON,
+  importSeasonBackup,
+  archiveCurrentSeason,
+  loadSeasonArchives,
+  restoreSeasonArchive,
+  deleteSeasonArchive,
   resetToInitialData,
 } from './utils/storage';
 import { Wifi, Battery, Signal, Smartphone, Monitor } from 'lucide-react';
@@ -44,6 +50,8 @@ export default function App() {
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [workerWages, setWorkerWages] = useState<WorkerWageRecord[]>([]);
   const [settings, setSettings] = useState<SeasonSettings>(loadSettings());
+  const [seasonArchives, setSeasonArchives] = useState<SeasonArchive[]>(loadSeasonArchives());
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Modal States
   const [isAddSaleOpen, setIsAddSaleOpen] = useState(false);
@@ -62,6 +70,8 @@ export default function App() {
     setExpenses(loadExpenses());
     setWorkerWages(loadWorkerWages());
     setSettings(loadSettings());
+    setSeasonArchives(loadSeasonArchives());
+    setDataLoaded(true);
   }, []);
 
   // Handlers for Sales
@@ -176,6 +186,85 @@ export default function App() {
     saveSettings(updated);
   };
 
+  const refreshSeasonData = () => {
+    setSales(loadSales());
+    setExpenses(loadExpenses());
+    setWorkerWages(loadWorkerWages());
+    setSettings(loadSettings());
+    setSeasonArchives(loadSeasonArchives());
+  };
+
+  const createSeasonArchive = () => {
+    archiveCurrentSeason();
+    refreshSeasonData();
+  };
+
+  const handleArchiveCurrentSeason = () => {
+    if (!sales.length && !expenses.length && !workerWages.length) {
+      alert('لا توجد سجلات موسم لأرشفتها.');
+      return;
+    }
+    if (!confirm(`سيتم حفظ «${settings.seasonName}» في الأرشيف ثم تصفير سجلات الموسم النشط. يمكنك استعادة الأرشيف لاحقاً. هل تريد المتابعة؟`)) return;
+    try {
+      createSeasonArchive();
+      alert('تمت أرشفة الموسم وبدء موسم جديد. نزّل نسخة JSON للاحتفاظ بنسخة خارج هذا الجهاز.');
+    } catch {
+      alert('تعذر حفظ الأرشيف. نزّل نسخة احتياطية وحاول مجدداً.');
+    }
+  };
+
+  const handleImportBackup = async (file: File) => {
+    try {
+      const backup = parseSeasonBackupJSON(await file.text());
+      if (!confirm('سيستبدل الاستيراد سجلات الموسم الحالية وإعداداته ببيانات الملف. صدّر نسخة من بياناتك الحالية أولاً. هل تريد المتابعة؟')) return;
+      importSeasonBackup(backup);
+      refreshSeasonData();
+      alert('تم استيراد النسخة الاحتياطية بنجاح.');
+    } catch (error) {
+      alert(error instanceof Error ? `تعذر استيراد النسخة: ${error.message}` : 'تعذر قراءة ملف النسخة الاحتياطية.');
+    }
+  };
+
+  const handleRestoreArchive = (archive: SeasonArchive) => {
+    if (!confirm(`ستُستبدل بيانات الموسم الحالي ببيانات «${archive.seasonName}». ستبقى الأرشيفات محفوظة. هل تريد المتابعة؟`)) return;
+    try {
+      restoreSeasonArchive(archive);
+      refreshSeasonData();
+      alert(`تمت استعادة ${archive.seasonName}.`);
+    } catch {
+      alert('تعذرت استعادة الأرشيف.');
+    }
+  };
+
+  const handleDeleteArchive = (archive: SeasonArchive) => {
+    if (!confirm(`سيُحذف أرشيف «${archive.seasonName}» نهائياً من هذا الجهاز. هل تريد المتابعة؟`)) return;
+    try {
+      deleteSeasonArchive(archive.id);
+      setSeasonArchives(loadSeasonArchives());
+    } catch {
+      alert('تعذر حذف الأرشيف.');
+    }
+  };
+
+  useEffect(() => {
+    if (!dataLoaded || (!sales.length && !expenses.length && !workerWages.length)) return;
+    const match = settings.seasonName.match(/(\d{4})$/);
+    const seasonYear = match ? Number(match[1]) : new Date().getFullYear();
+    const currentYear = new Date().getFullYear();
+    if (seasonYear >= currentYear || seasonArchives.some((archive) => archive.seasonName === settings.seasonName)) return;
+    const promptKey = `franc-warak-archive-prompt:${settings.seasonName}`;
+    if (sessionStorage.getItem(promptKey)) return;
+    sessionStorage.setItem(promptKey, 'shown');
+    if (confirm(`يبدو أن بيانات «${settings.seasonName}» تعود إلى سنة سابقة. هل ترغب بأرشفتها الآن وبدء موسم ${currentYear}؟`)) {
+      try {
+        createSeasonArchive();
+        alert('تم حفظ الموسم السابق في الأرشيف وبدء موسم جديد.');
+      } catch {
+        alert('تعذر حفظ الأرشيف. نزّل نسخة JSON قبل أي تصفير للبيانات.');
+      }
+    }
+  }, [dataLoaded, sales.length, expenses.length, workerWages.length, settings.seasonName, seasonArchives]);
+
   // Clear local season data
   const handleResetData = () => {
     if (confirm('سيتم حذف جميع المبيعات والمصاريف والأجور المحفوظة على هذا الجهاز نهائياً. صدّر نسخة احتياطية أولاً إذا كنت تحتاجها. هل تريد المتابعة؟')) {
@@ -286,8 +375,13 @@ export default function App() {
         {currentTab === 'settings' && (
           <SettingsView
             settings={settings}
+            archives={seasonArchives}
             onFarmerNameChange={handleFarmerNameChange}
             onTargetHarvestChange={handleTargetHarvestChange}
+            onImportBackup={handleImportBackup}
+            onArchiveCurrentSeason={handleArchiveCurrentSeason}
+            onRestoreArchive={handleRestoreArchive}
+            onDeleteArchive={handleDeleteArchive}
           />
         )}
         {currentTab === 'about' && <AboutView />}
