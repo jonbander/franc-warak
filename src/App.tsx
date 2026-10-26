@@ -298,7 +298,7 @@ export default function App() {
         isSimulatorMode={isSimulatorMode}
         setIsSimulatorMode={setIsSimulatorMode}
       />
-      <AnnouncementBanner />
+      <AnnouncementBanner simulatorMode={isSimulatorMode} />
 
       {/* Main Tab View Container */}
       <main className="flex-1 px-3 sm:px-4 py-4 max-w-lg mx-auto w-full">
@@ -459,7 +459,7 @@ export default function App() {
           <div className="hidden sm:block absolute -right-[7px] top-36 w-[3px] h-16 bg-stone-700 rounded-r-md" />
 
           {/* Smartphone Screen Glass */}
-          <div className="w-full h-full bg-stone-50 sm:rounded-[36px] overflow-hidden flex flex-col relative">
+          <div className="w-full h-full bg-stone-50 sm:rounded-[36px] overflow-hidden flex flex-col relative transform-gpu">
             {/* Status Bar (Time, Dynamic Island / Notch, Signal, Battery) */}
             <div className="hidden sm:flex items-center justify-between px-6 pt-3 pb-1 bg-white text-stone-900 text-xs font-mono font-semibold select-none z-30 shrink-0">
               <span>09:41</span>
