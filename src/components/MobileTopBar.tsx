@@ -11,7 +11,8 @@ import {
   X,
   Settings,
   Info,
-  MessageCircle
+  MessageCircle,
+  CircleHelp
 } from 'lucide-react';
 import { AVAILABLE_CURRENCIES } from '../data/initialData';
 import { AppTab, SeasonSettings } from '../types';
@@ -191,6 +192,22 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
 
               <button
                 onClick={() => {
+                  setCurrentTab('help');
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 text-stone-800 hover:bg-stone-50 rounded-xl text-right font-medium transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-800 flex items-center justify-center shrink-0">
+                  <CircleHelp className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-stone-900">المساعدة</div>
+                  <div className="text-[11px] text-stone-500">شرح استخدام صفحات وعمليات التطبيق</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
                   onOpenReport();
                   setIsMenuOpen(false);
                 }}
@@ -266,8 +283,8 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
                   <RotateCcw className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold">استعادة البيانات الافتراضية للموسم</div>
-                  <div className="text-[11px] text-stone-500">إعادة تعيين البيانات للقيم النموذجية</div>
+                  <div className="font-bold">مسح بيانات الموسم</div>
+                  <div className="text-[11px] text-stone-500">حذف المبيعات والأجور والمصاريف من هذا الجهاز</div>
                 </div>
               </button>
             </div>

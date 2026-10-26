@@ -8,6 +8,12 @@ const STORAGE_KEYS = {
   SETTINGS: 'grape_season_settings_v1',
 };
 
+const LEGACY_SAMPLE_IDS = {
+  sales: new Set(['sale-001', 'sale-002', 'sale-003', 'sale-004', 'sale-005', 'sale-006']),
+  expenses: new Set(['exp-001', 'exp-002', 'exp-003', 'exp-004', 'exp-005', 'exp-006', 'exp-007', 'exp-008']),
+  workers: new Set(['wage-001', 'wage-002', 'wage-003', 'wage-004', 'wage-005', 'wage-006']),
+};
+
 export const loadSales = (): SaleRecord[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SALES);
@@ -15,7 +21,10 @@ export const loadSales = (): SaleRecord[] => {
       saveSales(INITIAL_SALES);
       return INITIAL_SALES;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as SaleRecord[];
+    const cleaned = Array.isArray(parsed) ? parsed.filter((item) => !LEGACY_SAMPLE_IDS.sales.has(item?.id)) : [];
+    if (!Array.isArray(parsed) || cleaned.length !== parsed.length) saveSales(cleaned);
+    return cleaned;
   } catch (e) {
     console.error('Error loading sales from storage', e);
     return INITIAL_SALES;
@@ -37,7 +46,10 @@ export const loadExpenses = (): ExpenseRecord[] => {
       saveExpenses(INITIAL_EXPENSES);
       return INITIAL_EXPENSES;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as ExpenseRecord[];
+    const cleaned = Array.isArray(parsed) ? parsed.filter((item) => !LEGACY_SAMPLE_IDS.expenses.has(item?.id)) : [];
+    if (!Array.isArray(parsed) || cleaned.length !== parsed.length) saveExpenses(cleaned);
+    return cleaned;
   } catch (e) {
     console.error('Error loading expenses from storage', e);
     return INITIAL_EXPENSES;
@@ -59,7 +71,10 @@ export const loadWorkerWages = (): WorkerWageRecord[] => {
       saveWorkerWages(INITIAL_WORKER_WAGES);
       return INITIAL_WORKER_WAGES;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as WorkerWageRecord[];
+    const cleaned = Array.isArray(parsed) ? parsed.filter((item) => !LEGACY_SAMPLE_IDS.workers.has(item?.id) && !LEGACY_SAMPLE_IDS.sales.has(item?.relatedSaleId || '')) : [];
+    if (!Array.isArray(parsed) || cleaned.length !== parsed.length) saveWorkerWages(cleaned);
+    return cleaned;
   } catch (e) {
     console.error('Error loading worker wages from storage', e);
     return INITIAL_WORKER_WAGES;
@@ -82,10 +97,16 @@ export const loadSettings = (): SeasonSettings => {
       return INITIAL_SETTINGS;
     }
     const stored = JSON.parse(raw) as Partial<SeasonSettings>;
+    const isDefaultSeasonName = /^موسم(?: قطاف)? ورق العنب الفرنسي \d{4}$/.test(stored.seasonName || '');
     const settings: SeasonSettings = {
       ...INITIAL_SETTINGS,
       ...stored,
+      seasonName: isDefaultSeasonName ? INITIAL_SETTINGS.seasonName : (stored.seasonName || INITIAL_SETTINGS.seasonName),
+      farmName: stored.farmName === 'كروم الذهب الأخضر' ? '' : (stored.farmName || ''),
       farmerName: stored.farmerName === 'أبو أحمد البستاني' ? '' : (stored.farmerName || ''),
+      location: stored.location === 'مزارع السهل الغربي' ? '' : (stored.location || ''),
+      targetHarvestKg: stored.targetHarvestKg === 4000 ? 0 : (stored.targetHarvestKg ?? INITIAL_SETTINGS.targetHarvestKg),
+      seasonStartDate: stored.seasonStartDate === '2025-05-01' ? '' : (stored.seasonStartDate || ''),
     };
     saveSettings(settings);
     return settings;
@@ -208,7 +229,7 @@ export const exportExpensesToCSV = (expenses: ExpenseRecord[], currencySymbol: s
   URL.revokeObjectURL(url);
 };
 
-// Reset to factory sample data
+// Clear local season records and restore blank settings.
 export const resetToInitialData = (): void => {
   saveSales(INITIAL_SALES);
   saveExpenses(INITIAL_EXPENSES);

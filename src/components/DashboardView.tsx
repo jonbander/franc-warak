@@ -10,7 +10,9 @@ import {
   DollarSign,
   ChevronLeft,
   Calendar,
-  Sparkles
+  Sparkles,
+  MessageCircle,
+  CircleHelp
 } from 'lucide-react';
 import { AppTab, SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
@@ -446,7 +448,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Quick Action Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
         <button
           onClick={onOpenAddSale}
           className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-right transition-colors group flex items-start gap-3"
@@ -495,6 +497,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <p className="text-xs text-stone-600 mt-0.5">
               حساب اليوميات وأجور القطاف بالكيلو ومتابعة المدفوع والمتبقي للورش
             </p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onNavigate('chat')}
+          className="p-4 rounded-xl border border-sky-200 bg-sky-50/50 hover:bg-sky-50 text-right transition-colors group flex items-start gap-3"
+        >
+          <div className="p-2 rounded-lg bg-sky-700 text-white shrink-0 group-hover:scale-105 transition-transform">
+            <MessageCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-stone-900 group-hover:text-sky-800">الدردشة العامة</h4>
+            <p className="text-xs text-stone-600 mt-0.5">انتقل إلى غرفة مستخدمي التطبيق</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onNavigate('help')}
+          className="p-4 rounded-xl border border-violet-200 bg-violet-50/50 hover:bg-violet-50 text-right transition-colors group flex items-start gap-3"
+        >
+          <div className="p-2 rounded-lg bg-violet-700 text-white shrink-0 group-hover:scale-105 transition-transform">
+            <CircleHelp className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-stone-900 group-hover:text-violet-800">المساعدة</h4>
+            <p className="text-xs text-stone-600 mt-0.5">شرح استخدام التطبيق وعملياته</p>
           </div>
         </button>
       </div>

@@ -15,6 +15,7 @@ import { SettingsView } from './components/SettingsView';
 import { AboutView } from './components/AboutView';
 import { AnnouncementBanner } from './components/AnnouncementBanner';
 import { ChatView } from './components/ChatView';
+import { HelpView } from './components/HelpView';
 import { SaleReceiptModal } from './components/SaleReceiptModal';
 import { SeasonReportModal } from './components/SeasonReportModal';
 
@@ -169,9 +170,9 @@ export default function App() {
     saveSettings(updated);
   };
 
-  // Reset Data to sample
+  // Clear local season data
   const handleResetData = () => {
-    if (confirm('هل تريد استعادة البيانات النموذجية الافتراضية لموسم ورق العنب؟')) {
+    if (confirm('سيتم حذف جميع المبيعات والمصاريف والأجور المحفوظة على هذا الجهاز نهائياً. صدّر نسخة احتياطية أولاً إذا كنت تحتاجها. هل تريد المتابعة؟')) {
       resetToInitialData();
       setSales(loadSales());
       setExpenses(loadExpenses());
@@ -280,7 +281,8 @@ export default function App() {
           <SettingsView settings={settings} onFarmerNameChange={handleFarmerNameChange} />
         )}
         {currentTab === 'about' && <AboutView />}
-        {currentTab === 'chat' && <ChatView suggestedName={settings.farmerName} />}
+        {currentTab === 'chat' && <ChatView suggestedName={settings.farmerName} onOpenSettings={() => setCurrentTab('settings')} />}
+        {currentTab === 'help' && <HelpView />}
       </main>
 
       {/* Fixed Native Mobile Bottom Tab Bar */}

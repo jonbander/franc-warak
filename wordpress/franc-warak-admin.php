@@ -138,3 +138,52 @@ add_shortcode('franc_warak_announcement_admin', function () {
     <?php
     return ob_get_clean();
 });
+
+// The landing page can show a .fw-download-count span without embedding JS
+// in a WordPress Custom HTML block (which some roles/hosts sanitize).
+add_action('wp_footer', function () { ?>
+<script type="module">
+(() => {
+  const counters = document.querySelectorAll('.fw-download-count');
+  if (!counters.length) return;
+  const config = {
+    apiKey: 'AIzaSyBwOCy24qLlkCdnWhHBu722MrVM_v7e_RE',
+    authDomain: 'first22-7464f.firebaseapp.com',
+    projectId: 'first22-7464f',
+    appId: '1:1017587333323:web:e503a882b446f3450a834e',
+    messagingSenderId: '1017587333323',
+    storageBucket: 'first22-7464f.firebasestorage.app',
+    databaseURL: 'https://first22-7464f-default-rtdb.firebaseio.com'
+  };
+  const links = document.querySelectorAll('a.fw-download-cta');
+  const counterReady = Promise.all([
+    import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js'),
+    import('https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js')
+  ]).then(([appModule, authModule, dbModule]) => {
+    const app = appModule.initializeApp(config, 'fw-download-counter');
+    const auth = authModule.getAuth(app);
+    const db = dbModule.getDatabase(app, config.databaseURL);
+    const countRef = dbModule.ref(db, 'siteStats/downloads');
+    dbModule.onValue(countRef, snapshot => {
+      const count = Math.max(500, Number(snapshot.val()) || 500);
+      counters.forEach(el => { el.textContent = count.toLocaleString('ar'); });
+    });
+    return { auth, signInAnonymously: authModule.signInAnonymously, countRef, runTransaction: dbModule.runTransaction };
+  });
+  counterReady.catch(error => console.warn('Download counter unavailable', error));
+  links.forEach(link => {
+    link.addEventListener('click', event => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      void counterReady.then(async ({ auth, signInAnonymously, countRef, runTransaction }) => {
+        if (!auth.currentUser) await signInAnonymously(auth);
+        const result = await runTransaction(countRef, value => Math.max(500, Number(value) || 500) + 1, { applyLocally: false });
+        if (result.committed) counters.forEach(el => { el.textContent = Number(result.snapshot.val()).toLocaleString('ar'); });
+      }).catch(error => {
+        console.warn('Download counter could not update', error);
+      });
+    });
+  });
+})();
+</script>
+<?php }, 100);

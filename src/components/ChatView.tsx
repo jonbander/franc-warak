@@ -15,14 +15,14 @@ interface ChatMessage {
 
 interface ChatViewProps {
   suggestedName: string;
+  onOpenSettings: () => void;
 }
 
 const CHAT_PATH = 'publicChat/messages';
 const MAX_MESSAGE_LENGTH = 500;
 
-export const ChatView: React.FC<ChatViewProps> = ({ suggestedName }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ suggestedName, onOpenSettings }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [senderName, setSenderName] = useState(() => localStorage.getItem('franc_chat_display_name') || suggestedName || '');
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -30,6 +30,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName }) => {
   const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'offline'>('connecting');
   const [senderUid, setSenderUid] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
+  const senderName = suggestedName.trim().slice(0, 60);
 
   useEffect(() => {
     const unsubscribers: Array<() => void> = [];
@@ -80,7 +81,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName }) => {
 
   const sendMessage = async (event: FormEvent) => {
     event.preventDefault();
-    const cleanName = senderName.trim().slice(0, 60);
+    const cleanName = suggestedName.trim().slice(0, 60);
     const cleanText = messageText.trim();
     if (!cleanName || !cleanText || !senderUid || sending) return;
     if (cleanText.length > MAX_MESSAGE_LENGTH) {
@@ -90,8 +91,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName }) => {
 
     setError('');
     setSending(true);
-    localStorage.setItem('franc_chat_display_name', cleanName);
-    setSenderName(cleanName);
     setMessageText('');
 
     try {
@@ -124,13 +123,13 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName }) => {
   };
 
   const retryMessage = async (message: ChatMessage) => {
-    if (!message.failed || !senderUid) return;
+    if (!message.failed || !senderUid || !senderName) return;
     setMessages((current) => current.map((item) => item.id === message.id ? { ...item, failed: false, pending: true } : item));
     try {
       const database = await getFirebaseDatabase();
       await set(ref(database, `${CHAT_PATH}/${message.id}`), {
         senderUid,
-        senderName: message.senderName,
+        senderName,
         text: message.text,
         createdAt: serverTimestamp(),
       });
@@ -182,15 +181,17 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName }) => {
       </div>
 
       <form onSubmit={sendMessage} className="space-y-2 rounded-2xl border border-stone-200 bg-white p-3 shadow-xs">
-        <label className="block text-xs font-semibold text-stone-700" htmlFor="chat-sender-name">الاسم الظاهر للآخرين</label>
-        <input
-          id="chat-sender-name"
-          value={senderName}
-          onChange={(event) => setSenderName(event.target.value.slice(0, 60))}
-          maxLength={60}
-          placeholder="اكتب اسمك"
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
-        />
+        <div className="flex items-center justify-between gap-3 rounded-lg bg-stone-50 px-3 py-2 text-xs">
+          <div>
+            <span className="text-stone-500">سيظهر اسم المزارع في الرسائل: </span>
+            <strong className={senderName ? 'text-stone-800' : 'text-rose-700'}>{senderName || 'لم يُدخل بعد'}</strong>
+          </div>
+          {!senderName && (
+            <button type="button" onClick={onOpenSettings} className="shrink-0 font-bold text-emerald-800 underline">
+              إدخال الاسم
+            </button>
+          )}
+        </div>
         <div className="flex items-end gap-2">
           <textarea
             value={messageText}
@@ -203,7 +204,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName }) => {
           />
           <button
             type="submit"
-            disabled={sending || connectionState !== 'connected' || !senderName.trim() || !messageText.trim()}
+            disabled={sending || connectionState !== 'connected' || !senderName || !messageText.trim()}
             aria-label="إرسال الرسالة"
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-lg bg-emerald-800 px-3 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
