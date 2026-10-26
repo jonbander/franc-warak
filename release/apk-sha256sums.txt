@@ -1,0 +1,4 @@
+# Franc Warak APK artifact checksums
+# Format: SHA-256  filename | version | Android versionCode | commit | CI run
+# This is a checksum of the APK file bytes, NOT the signing-certificate fingerprint.
+508b9060606c50ba3040027909811937f409ff7e5f77be2f01c94e80445bc06b  franc-warak-v1.0.5-debug.apk | 1.0.5 | 6 | 3d22503c69eb62e067a52e3ba8c8a323dc69977c | https://github.com/jonbander/franc-warak/actions/runs/40343338642
