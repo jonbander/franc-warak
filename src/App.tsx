@@ -13,6 +13,8 @@ import { WorkersView } from './components/WorkersView';
 import { CalculatorView } from './components/CalculatorView';
 import { SettingsView } from './components/SettingsView';
 import { AboutView } from './components/AboutView';
+import { AnnouncementBanner } from './components/AnnouncementBanner';
+import { ChatView } from './components/ChatView';
 import { SaleReceiptModal } from './components/SaleReceiptModal';
 import { SeasonReportModal } from './components/SeasonReportModal';
 
@@ -200,6 +202,7 @@ export default function App() {
         isSimulatorMode={isSimulatorMode}
         setIsSimulatorMode={setIsSimulatorMode}
       />
+      <AnnouncementBanner />
 
       {/* Main Tab View Container */}
       <main className="flex-1 px-3 sm:px-4 py-4 max-w-lg mx-auto w-full">
@@ -277,6 +280,7 @@ export default function App() {
           <SettingsView settings={settings} onFarmerNameChange={handleFarmerNameChange} />
         )}
         {currentTab === 'about' && <AboutView />}
+        {currentTab === 'chat' && <ChatView suggestedName={settings.farmerName} />}
       </main>
 
       {/* Fixed Native Mobile Bottom Tab Bar */}

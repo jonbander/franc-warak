@@ -10,7 +10,8 @@ import {
   Menu, 
   X,
   Settings,
-  Info
+  Info,
+  MessageCircle
 } from 'lucide-react';
 import { AVAILABLE_CURRENCIES } from '../data/initialData';
 import { AppTab, SeasonSettings } from '../types';
@@ -140,6 +141,22 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
             </div>
 
             <div className="space-y-1 text-xs">
+              <button
+                onClick={() => {
+                  setCurrentTab('chat');
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 text-stone-800 hover:bg-stone-50 rounded-xl text-right font-medium transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+                  <MessageCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-stone-900">الدردشة العامة</div>
+                  <div className="text-[11px] text-stone-500">تواصل مع مستخدمي التطبيق</div>
+                </div>
+              </button>
+
               <button
                 onClick={() => {
                   setCurrentTab('settings');

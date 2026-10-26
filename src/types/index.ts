@@ -16,7 +16,7 @@ export type PaymentStatus = 'مدفوع بالكامل' | 'دفعة جزئية' 
 
 export type PaymentMethod = 'نقدي (كاش)' | 'حوالة بنكية' | 'شيك' | 'دفع آجل';
 
-export type AppTab = 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator' | 'settings' | 'about';
+export type AppTab = 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator' | 'settings' | 'about' | 'chat';
 
 export interface SaleRecord {
   id: string;
