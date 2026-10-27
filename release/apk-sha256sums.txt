@@ -4,4 +4,4 @@
 508b9060606c50ba3040027909811937f409ff7e5f77be2f01c94e80445bc06b  franc-warak-v1.0.5-debug.apk | 1.0.5 | 6 | 3d22503c69eb62e067a52e3ba8c8a323dc69977c | https://github.com/jonbander/franc-warak/actions/runs/40343338642
 f43bc8299fa7cd4fd5398bf55fc841cbb83fa06dcd7f1e634464220db23a9c29  franc-warak-v1.0.6-debug.apk | 1.0.6 | 7 | c7a4b1d1dead763118acd2dc4cbdab694e402f1d | https://github.com/jonbander/franc-warak/actions/runs/40372236001
 23a57fc75701c63c07fc06a7b38316d24fe2624542de39cafee286d71461e8fa  franc-warak-v1.0.6-current-debug.apk | 1.0.6 | 7 | c6a52bd6e63d58213966c21d7475767945646e94 | https://github.com/jonbander/franc-warak/actions/runs/40395170909
-81a0fc2c0f03a91c7211a76f59dc1fe4297f3a0b44ccb9174b3930e5a1afc50a  franc-warak-v1.0.8-debug.apk | 1.0.8 | 9 | 231a530174dc48d46f3efd20cfa796b3052df06c | https://github.com/jonbander/franc-warak/actions/runs/40591273387
+d67d492d4d268da5bdc9900c79a538e04e1dd63bd69936a94ba15238ca3f9d5f  franc-warak-v1.0.8-debug.apk | 1.0.8 | 9 | cb5dcfa7c529eac9c913f8fc7354e86a56ee6a6a | https://github.com/jonbander/franc-warak/actions/runs/40591816939
