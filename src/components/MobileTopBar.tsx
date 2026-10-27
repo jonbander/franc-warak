@@ -44,7 +44,7 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-xs no-print">
+      <header className="fw-app-topbar sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-xs no-print">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between gap-2">
           {/* Brand Slot */}
           <div className="flex items-center gap-2 min-w-0">
@@ -124,7 +124,7 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
       {/* Mobile Drawer Menu Sheet */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
-          <div className="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+          <div className="fw-app-drawer bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             {/* Grab Handle for mobile */}
             <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto sm:hidden mb-1" />
 

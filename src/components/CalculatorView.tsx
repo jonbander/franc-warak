@@ -109,7 +109,7 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({
               className="w-full px-3 py-2 text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
             />
             <div className="flex gap-1.5 mt-2">
-              {[5000, 7500, 10000, 12500, 15000, 20000].map((p) => (
+              {[5000, 7500, 10000, 12500, 15000].map((p) => (
                 <button
                   key={p}
                   type="button"

@@ -205,7 +205,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Net Season Profit */}
-        <div className="bg-emerald-900 text-white p-5 rounded-xl border border-emerald-950 shadow-xs">
+        <div className="fw-net-profit-card bg-emerald-900 text-white p-5 rounded-xl border border-emerald-950 shadow-xs">
           <div className="flex items-center justify-between text-emerald-200 mb-2">
             <span className="text-xs font-medium">صافي أرباح الموسم</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-800 text-emerald-100 flex items-center justify-center">
@@ -451,7 +451,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
         <button
           onClick={onOpenAddSale}
-          className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-right transition-colors group flex items-start gap-3"
+          className="fw-quick-action-card p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-right transition-colors group flex items-start gap-3"
         >
           <div className="p-2 rounded-lg bg-emerald-700 text-white shrink-0 group-hover:scale-105 transition-transform">
             <PlusCircle className="w-5 h-5" />
@@ -468,7 +468,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <button
           onClick={onOpenAddExpense}
-          className="p-4 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-right transition-colors group flex items-start gap-3"
+          className="fw-quick-action-card p-4 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-right transition-colors group flex items-start gap-3"
         >
           <div className="p-2 rounded-lg bg-rose-700 text-white shrink-0 group-hover:scale-105 transition-transform">
             <Receipt className="w-5 h-5" />
@@ -485,7 +485,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <button
           onClick={onOpenAddWorker}
-          className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 text-right transition-colors group flex items-start gap-3"
+          className="fw-quick-action-card p-4 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 text-right transition-colors group flex items-start gap-3"
         >
           <div className="p-2 rounded-lg bg-amber-700 text-white shrink-0 group-hover:scale-105 transition-transform">
             <Users className="w-5 h-5" />
@@ -502,7 +502,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <button
           onClick={() => onNavigate('chat')}
-          className="p-4 rounded-xl border border-sky-200 bg-sky-50/50 hover:bg-sky-50 text-right transition-colors group flex items-start gap-3"
+          className="fw-quick-action-card p-4 rounded-xl border border-sky-200 bg-sky-50/50 hover:bg-sky-50 text-right transition-colors group flex items-start gap-3"
         >
           <div className="p-2 rounded-lg bg-sky-700 text-white shrink-0 group-hover:scale-105 transition-transform">
             <MessageCircle className="w-5 h-5" />
@@ -515,7 +515,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <button
           onClick={() => onNavigate('help')}
-          className="p-4 rounded-xl border border-violet-200 bg-violet-50/50 hover:bg-violet-50 text-right transition-colors group flex items-start gap-3"
+          className="fw-quick-action-card p-4 rounded-xl border border-violet-200 bg-violet-50/50 hover:bg-violet-50 text-right transition-colors group flex items-start gap-3"
         >
           <div className="p-2 rounded-lg bg-violet-700 text-white shrink-0 group-hover:scale-105 transition-transform">
             <CircleHelp className="w-5 h-5" />

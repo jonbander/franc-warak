@@ -212,3 +212,74 @@
     border: 1px solid #d1d5db !important;
   }
 }
+
+
+/* Dashboard refinements: neutral profit card, charcoal actions, and dark navigation. */
+.fw-theme-dark .fw-net-profit-card {
+  background: #34383c !important;
+  border-color: #51575d !important;
+}
+
+.fw-theme-dark .fw-net-profit-card > div:first-child {
+  color: #e2e6e9 !important;
+}
+
+.fw-theme-dark .fw-net-profit-card .bg-emerald-800 {
+  background: #4a5056 !important;
+  color: #f4f6f7 !important;
+}
+
+.fw-theme-dark .fw-net-profit-card .text-emerald-300 {
+  color: #ffffff !important;
+}
+
+.fw-theme-dark .fw-net-profit-card .text-emerald-200 {
+  color: #d1d7dc !important;
+}
+
+.fw-theme-dark .fw-quick-action-card {
+  background: linear-gradient(145deg, #242629, #1c1e21) !important;
+  border-color: #3c4045 !important;
+  color: var(--fw-text) !important;
+}
+
+.fw-theme-dark .fw-quick-action-card:hover {
+  background: linear-gradient(145deg, #2c2f33, #222529) !important;
+  border-color: #555b61 !important;
+}
+
+.fw-theme-dark .fw-app-topbar {
+  background: rgba(25, 20, 15, .97) !important;
+  border-color: #3b3126 !important;
+  color: var(--fw-text) !important;
+}
+
+.fw-theme-dark .fw-app-tabbar {
+  background: rgba(25, 20, 15, .98) !important;
+  border-color: #3b3126 !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, .38) !important;
+}
+
+.fw-theme-dark .fw-app-drawer {
+  background: #211a14 !important;
+  color: var(--fw-text) !important;
+  border: 1px solid #403529 !important;
+}
+
+.fw-theme-dark .fw-app-drawer > button:hover,
+.fw-theme-dark .fw-app-drawer [class*="hover:bg-stone-50"]:hover {
+  background: rgba(255, 255, 255, .07) !important;
+}
+
+.fw-theme-dark .fw-app-drawer .bg-sky-50,
+.fw-theme-dark .fw-app-drawer .bg-emerald-50,
+.fw-theme-dark .fw-app-drawer .bg-blue-50,
+.fw-theme-dark .fw-app-drawer .bg-amber-50,
+.fw-theme-dark .fw-app-drawer .bg-stone-100,
+.fw-theme-dark .fw-app-drawer .bg-rose-50 {
+  background: rgba(255, 255, 255, .07) !important;
+}
+
+.fw-theme-dark .fw-app-drawer .border-stone-200 {
+  border-color: var(--fw-line) !important;
+}
