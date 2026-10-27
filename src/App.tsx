@@ -285,7 +285,7 @@ export default function App() {
 
   // Main Mobile App Content Body
   const appContent = (
-    <div className="flex flex-col min-h-full bg-stone-50 text-stone-900 pb-24">
+    <div className="fw-theme-dark flex flex-col min-h-full bg-stone-50 text-stone-900 pb-24">
       {/* Mobile Top App Bar */}
       <MobileTopBar
         currentTab={currentTab}

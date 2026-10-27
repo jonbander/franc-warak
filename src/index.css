@@ -4,10 +4,195 @@
   body {
     font-family: 'Alexandria', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
-  
+
   .font-mono, .tabular-nums {
     font-family: 'JetBrains Mono', monospace;
     font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Warm dark visual layer inspired by the supplied confectionery-workshop theme. */
+.fw-theme-dark {
+  --fw-bg: #14100c;
+  --fw-bg-deep: #0b0805;
+  --fw-surface: #1e1710;
+  --fw-surface-raised: #261c13;
+  --fw-card: rgba(255, 255, 255, .045);
+  --fw-card-hover: rgba(255, 255, 255, .075);
+  --fw-line: rgba(245, 239, 230, .11);
+  --fw-text: #f5efe6;
+  --fw-sub: #bcae9c;
+  --fw-muted: #8a7d6b;
+  --fw-gold: #e8a94e;
+  --fw-gold-light: #f5c877;
+  --fw-green: #4ade80;
+  --fw-red: #f87171;
+  color-scheme: dark;
+  color: var(--fw-text);
+  background:
+    radial-gradient(900px 440px at 50% -8%, rgba(232, 169, 78, .10), transparent 65%),
+    linear-gradient(165deg, var(--fw-bg) 0%, var(--fw-surface) 100%) !important;
+  min-height: 100%;
+}
+
+.fw-theme-dark,
+.fw-theme-dark * {
+  border-color: var(--fw-line);
+}
+
+.fw-theme-dark main {
+  background: transparent;
+}
+
+.fw-theme-dark h1,
+.fw-theme-dark h2,
+.fw-theme-dark h3,
+.fw-theme-dark h4,
+.fw-theme-dark h5,
+.fw-theme-dark .text-stone-900,
+.fw-theme-dark .text-stone-800 {
+  color: var(--fw-text) !important;
+}
+
+.fw-theme-dark .text-stone-700,
+.fw-theme-dark .text-stone-600,
+.fw-theme-dark .text-stone-500 {
+  color: var(--fw-sub) !important;
+}
+
+.fw-theme-dark .text-stone-400,
+.fw-theme-dark .text-stone-300 {
+  color: var(--fw-muted) !important;
+}
+
+.fw-theme-dark .bg-white,
+.fw-theme-dark .bg-stone-50,
+.fw-theme-dark .bg-stone-100,
+.fw-theme-dark .bg-stone-200,
+.fw-theme-dark .bg-amber-50,
+.fw-theme-dark .bg-amber-50\/70,
+.fw-theme-dark .bg-amber-100\/60 {
+  background-color: var(--fw-card) !important;
+}
+
+.fw-theme-dark .bg-stone-50\/70,
+.fw-theme-dark .hover\:bg-stone-50:hover,
+.fw-theme-dark .hover\:bg-stone-100:hover,
+.fw-theme-dark .hover\:bg-stone-200:hover {
+  background-color: var(--fw-card-hover) !important;
+}
+
+.fw-theme-dark .border-stone-100,
+.fw-theme-dark .border-stone-200,
+.fw-theme-dark .border-stone-300,
+.fw-theme-dark .border-amber-200,
+.fw-theme-dark .border-amber-300 {
+  border-color: var(--fw-line) !important;
+}
+
+.fw-theme-dark input:not([type="checkbox"]):not([type="radio"]),
+.fw-theme-dark select,
+.fw-theme-dark textarea {
+  color: var(--fw-text) !important;
+  background-color: rgba(255, 255, 255, .05) !important;
+  border-color: var(--fw-line) !important;
+}
+
+.fw-theme-dark input::placeholder,
+.fw-theme-dark textarea::placeholder {
+  color: #8a7d6b !important;
+}
+
+.fw-theme-dark option {
+  color: var(--fw-text);
+  background: var(--fw-surface);
+}
+
+.fw-theme-dark button,
+.fw-theme-dark a,
+.fw-theme-dark [role="button"] {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
+
+.fw-theme-dark button:active,
+.fw-theme-dark [role="button"]:active {
+  transform: scale(.975);
+}
+
+.fw-theme-dark button:focus-visible,
+.fw-theme-dark a:focus-visible,
+.fw-theme-dark input:focus-visible,
+.fw-theme-dark select:focus-visible,
+.fw-theme-dark textarea:focus-visible {
+  outline: 2px solid var(--fw-gold-light);
+  outline-offset: 2px;
+}
+
+.fw-theme-dark .bg-amber-700,
+.fw-theme-dark .bg-amber-800,
+.fw-theme-dark .bg-emerald-800,
+.fw-theme-dark .bg-emerald-900 {
+  color: #21170c !important;
+  background: linear-gradient(135deg, var(--fw-gold-light), var(--fw-gold)) !important;
+  border-color: transparent !important;
+}
+
+.fw-theme-dark .hover\:bg-amber-800:hover,
+.fw-theme-dark .hover\:bg-emerald-800:hover {
+  background: var(--fw-gold) !important;
+}
+
+.fw-theme-dark .text-amber-950,
+.fw-theme-dark .text-amber-900,
+.fw-theme-dark .text-amber-800,
+.fw-theme-dark .text-amber-700,
+.fw-theme-dark .text-amber-600 {
+  color: var(--fw-gold-light) !important;
+}
+
+.fw-theme-dark .text-emerald-900,
+.fw-theme-dark .text-emerald-800,
+.fw-theme-dark .text-emerald-700,
+.fw-theme-dark .text-emerald-600 {
+  color: var(--fw-green) !important;
+}
+
+.fw-theme-dark .text-rose-800,
+.fw-theme-dark .text-rose-700,
+.fw-theme-dark .text-rose-600,
+.fw-theme-dark .text-red-700 {
+  color: var(--fw-red) !important;
+}
+
+.fw-theme-dark .shadow-xs,
+.fw-theme-dark .shadow-sm,
+.fw-theme-dark .shadow-md {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .18) !important;
+}
+
+.fw-theme-dark main > * {
+  animation: fw-rise-in 320ms ease both;
+}
+
+.fw-theme-dark main > * > * {
+  animation: fw-rise-in 380ms ease both;
+}
+
+@keyframes fw-rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-theme-dark *,
+  .fw-theme-dark *::before,
+  .fw-theme-dark *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
   }
 }
 

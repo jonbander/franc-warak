@@ -68,6 +68,8 @@ export type WorkerPaymentType = 'أجر يومي' | 'أجر بالوزن (بال
 export interface WorkerWageRecord {
   id: string;
   date: string;
+  /** New free-text work/task description; old records fall back to workerOrLeaderName. */
+  taskType?: string;
   workerOrLeaderName: string; // اسم العامل أو رئيس الورشة
   workType: WorkerPaymentType;
   workerCount: number;
