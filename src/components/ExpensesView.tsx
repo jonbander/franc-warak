@@ -490,7 +490,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     step="any"
                     min="0.1"
                     required
-                    value={formData.amount}
+                    value={formData.amount || ''}
                     onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-600 focus:bg-white"
                   />

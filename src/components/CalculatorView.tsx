@@ -171,7 +171,7 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({
                 type="number"
                 step="any"
                 min="0"
-                value={laborRate}
+                value={laborRate || ''}
                 onChange={(e) => setLaborRate(Math.max(0, parseFloat(e.target.value) || 0))}
                 className="w-full px-3 py-2 text-sm font-mono bg-white border border-amber-300 rounded-lg focus:outline-none"
               />
@@ -188,7 +188,7 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({
               type="number"
               step="any"
               min="0"
-              value={extraExpenses}
+              value={extraExpenses || ''}
               onChange={(e) => setExtraExpenses(Math.max(0, parseFloat(e.target.value) || 0))}
               className="w-full px-3 py-2 text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
             />

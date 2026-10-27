@@ -1,5 +1,8 @@
 import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings, SeasonBackup, SeasonArchive } from '../types';
 import { INITIAL_SALES, INITIAL_EXPENSES, INITIAL_WORKER_WAGES, INITIAL_SETTINGS } from '../data/initialData';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 const STORAGE_KEYS = {
   SALES: 'grape_season_sales_v1',
@@ -137,8 +140,45 @@ export const saveSettings = (settings: SeasonSettings): void => {
   }
 };
 
+const deliverFile = async (filename: string, contents: string, mimeType: string): Promise<void> => {
+  const blob = new Blob([contents], { type: mimeType });
+  if (Capacitor.isNativePlatform()) {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result !== 'string') return reject(new Error('تعذر تجهيز الملف للمشاركة.'));
+        resolve(reader.result.slice(reader.result.indexOf(',') + 1));
+      };
+      reader.onerror = () => reject(reader.error || new Error('تعذر قراءة الملف.'));
+      reader.readAsDataURL(blob);
+    });
+    const { uri } = await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Cache });
+    await Share.share({
+      title: filename,
+      text: 'اختر «الملفات» أو وجهة مناسبة لحفظ أو نقل النسخة.',
+      url: uri,
+      dialogTitle: 'حفظ أو مشاركة الملف',
+    });
+    return;
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+};
+
+const alertExportFailure = (error: unknown) => {
+  console.error('Failed to export file', error);
+  window.alert('تعذر إنشاء الملف أو فتح قائمة المشاركة. تحقق من مساحة الجهاز وحاول مجدداً.');
+};
+
 // Export all season data to a JSON backup file
-export const exportSeasonDataJSON = (): void => {
+export const exportSeasonDataJSON = async (): Promise<void> => {
   const data = {
     format: 'franc-warak-season-backup',
     formatVersion: 1,
@@ -149,13 +189,29 @@ export const exportSeasonDataJSON = (): void => {
     exportedAt: new Date().toISOString(),
   };
 
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `نسخة_احتياطية_ورق_العنب_${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  try {
+    await deliverFile(`نسخة_احتياطية_ورق_العنب_${new Date().toISOString().split('T')[0]}.json`, JSON.stringify(data, null, 2), 'application/json');
+  } catch (error) {
+    alertExportFailure(error);
+  }
+};
+
+export const exportSeasonArchiveJSON = async (archive: SeasonArchive): Promise<void> => {
+  const backup = {
+    format: 'franc-warak-season-backup',
+    formatVersion: 1,
+    settings: archive.settings,
+    sales: archive.sales,
+    expenses: archive.expenses,
+    workers: archive.workers,
+    exportedAt: new Date().toISOString(),
+  };
+  const safeSeasonName = archive.seasonName.replace(/[^\p{L}\p{N}-]+/gu, '_');
+  try {
+    await deliverFile(`نسخة_${safeSeasonName}.json`, JSON.stringify(backup, null, 2), 'application/json');
+  } catch (error) {
+    alertExportFailure(error);
+  }
 };
 
 const isRecordArray = (value: unknown): value is Array<Record<string, unknown>> =>
@@ -279,7 +335,7 @@ export const deleteSeasonArchive = (archiveId: string): void => {
 };
 
 // Export sales to CSV for Excel
-export const exportSalesToCSV = (sales: SaleRecord[], currencySymbol: string): void => {
+export const exportSalesToCSV = async (sales: SaleRecord[], currencySymbol: string): Promise<void> => {
   const headers = [
     'المعرف',
     'التاريخ',
@@ -321,17 +377,15 @@ export const exportSalesToCSV = (sales: SaleRecord[], currencySymbol: string): v
   ]);
 
   const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `سجل_مبيعات_ورق_العنب_${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  try {
+    await deliverFile(`سجل_مبيعات_ورق_العنب_${new Date().toISOString().split('T')[0]}.csv`, csvContent, 'text/csv;charset=utf-8;');
+  } catch (error) {
+    alertExportFailure(error);
+  }
 };
 
 // Export expenses to CSV for Excel
-export const exportExpensesToCSV = (expenses: ExpenseRecord[], currencySymbol: string): void => {
+export const exportExpensesToCSV = async (expenses: ExpenseRecord[], currencySymbol: string): Promise<void> => {
   const headers = [
     'المعرف',
     'التاريخ',
@@ -355,13 +409,11 @@ export const exportExpensesToCSV = (expenses: ExpenseRecord[], currencySymbol: s
   ]);
 
   const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `سجل_مصاريف_الموسم_${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  try {
+    await deliverFile(`سجل_مصاريف_الموسم_${new Date().toISOString().split('T')[0]}.csv`, csvContent, 'text/csv;charset=utf-8;');
+  } catch (error) {
+    alertExportFailure(error);
+  }
 };
 
 // Clear local season records and restore blank settings.

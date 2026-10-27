@@ -708,7 +708,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       step="any"
                       min="0.1"
                       required
-                      value={formData.quantity}
+                      value={formData.quantity || ''}
                       onChange={(e) => {
                         const val = parseFloat(e.target.value) || 0;
                         setFormData({ 
@@ -759,7 +759,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       step="any"
                       min="0.01"
                       required
-                      value={formData.unitPrice}
+                      value={formData.unitPrice || ''}
                       onChange={(e) => {
                         const val = parseFloat(e.target.value) || 0;
                         setFormData({ 
@@ -784,7 +784,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       step="any"
                       min="0"
                       required
-                      value={formData.laborCost}
+                      value={formData.laborCost || ''}
                       onChange={(e) => setFormData({ ...formData, laborCost: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 text-sm font-mono bg-white border border-amber-300 text-amber-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600"
                     />
@@ -799,7 +799,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       step="any"
                       min="0"
                       max={formData.laborCost}
-                      value={formData.laborPaidAmount}
+                      value={formData.laborPaidAmount || ''}
                       onChange={(e) => setFormData({ ...formData, laborPaidAmount: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 text-sm font-mono bg-white border border-emerald-300 text-emerald-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
                     />
@@ -873,7 +873,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     min="0"
                     max={totalAmount}
                     step="any"
-                    value={formData.paidAmount}
+                    value={formData.paidAmount || ''}
                     onChange={(e) => { const paidAmount = parseFloat(e.target.value) || 0; const paymentStatus: PaymentStatus = paidAmount <= 0 ? 'آجل (غير مدفوع)' : paidAmount >= totalAmount ? 'مدفوع بالكامل' : 'دفعة جزئية'; setFormData({ ...formData, paidAmount, paymentStatus }); }}
                     className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
                   />

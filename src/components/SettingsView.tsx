@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Archive, Download, RotateCcw, Save, Trash2, Upload, UserRound } from 'lucide-react';
 import { SeasonArchive, SeasonSettings } from '../types';
+import { exportSeasonArchiveJSON } from '../utils/storage';
 
 interface SettingsViewProps {
   settings: SeasonSettings;
@@ -22,7 +23,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onArchiveCurrentSeason,
   onRestoreArchive,
   onDeleteArchive,
-}) => (
+}) => {
+  const backupInputRef = useRef<HTMLInputElement>(null);
+
+  return (
   <div className="space-y-5">
     <div>
       <h2 className="text-xl sm:text-2xl font-bold text-stone-900">إدارة المزارع</h2>
@@ -89,19 +93,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         النسخة الاحتياطية ملف يمكنك نقله إلى هاتف آخر أو استيراده بعد إعادة تثبيت التطبيق. أرشيف المواسم محفوظ على هذا الجهاز؛ نزّل نسخة JSON للاحتفاظ بها خارج الجهاز.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm font-semibold text-stone-800 hover:bg-stone-50">
+        <button type="button" onClick={() => backupInputRef.current?.click()} className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm font-semibold text-stone-800 hover:bg-stone-50">
           <Upload className="h-4 w-4" /> استيراد نسخة JSON
-          <input
+        </button>
+        <input
+            ref={backupInputRef}
             type="file"
             accept="application/json,.json"
-            className="sr-only"
+            className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (file) onImportBackup(file);
               event.currentTarget.value = '';
             }}
           />
-        </label>
         <button
           type="button"
           onClick={onArchiveCurrentSeason}
@@ -133,16 +138,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <button type="button" onClick={() => onDeleteArchive(archive)} aria-label={`حذف أرشيف ${archive.seasonName}`} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-800">
                   <Trash2 className="h-3.5 w-3.5" /> حذف
                 </button>
-                <button type="button" onClick={() => {
-                  const backup = { format: 'franc-warak-season-backup', formatVersion: 1, settings: archive.settings, sales: archive.sales, expenses: archive.expenses, workers: archive.workers, exportedAt: new Date().toISOString() };
-                  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = `نسخة_${archive.seasonName.replace(/[^\p{L}\p{N}-]+/gu, '_')}.json`;
-                  link.click();
-                  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-                }} className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-700">
+                <button type="button" onClick={() => void exportSeasonArchiveJSON(archive)} className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-700">
                   <Download className="h-3.5 w-3.5" /> تنزيل
                 </button>
               </div>
@@ -152,4 +148,5 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
     </section>
   </div>
-);
+  );
+};

@@ -533,7 +533,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                     step="any"
                     min="0.1"
                     required
-                    value={formData.unitsOrHours}
+                    value={formData.unitsOrHours || ''}
                     onChange={(e) => {
                       const val = parseFloat(e.target.value) || 0;
                       setFormData({ 
@@ -556,7 +556,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                     step="any"
                     min="0.01"
                     required
-                    value={formData.ratePerUnit}
+                    value={formData.ratePerUnit || ''}
                     onChange={(e) => {
                       const val = parseFloat(e.target.value) || 0;
                       setFormData({ 
@@ -589,7 +589,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                     step="any"
                     min="0"
                     max={calculatedTotalWage}
-                    value={formData.paidWage}
+                    value={formData.paidWage || ''}
                     onChange={(e) => setFormData({ ...formData, paidWage: parseFloat(e.target.value) || 0 })}
                     className="w-28 px-2 py-1 text-xs font-mono bg-white border border-amber-300 rounded-md focus:outline-none text-left"
                   />
