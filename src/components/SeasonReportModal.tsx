@@ -2,7 +2,9 @@ import React from 'react';
 import { X, Printer, Sprout, Download } from 'lucide-react';
 import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
+import { getSaleKgEquivalent } from '../utils/units';
 import { exportSalesToCSV, exportExpensesToCSV } from '../utils/storage';
+import { ModalPortal } from './ModalPortal';
 
 interface SeasonReportModalProps {
   sales: SaleRecord[];
@@ -32,16 +34,21 @@ export const SeasonReportModal: React.FC<SeasonReportModalProps> = ({
   const netSeasonProfit = totalSalesRevenue - totalCosts;
   const profitMargin = totalSalesRevenue > 0 ? (netSeasonProfit / totalSalesRevenue) * 100 : 0;
 
-  const totalKgSold = sales.reduce((acc, curr) => acc + curr.quantity, 0);
-  const avgPrice = totalKgSold > 0 ? totalSalesRevenue / totalKgSold : 0;
+  const totalKgSold = sales.reduce((acc, curr) => acc + getSaleKgEquivalent(curr), 0);
+  const salesWithKnownWeight = sales.filter((sale) => getSaleKgEquivalent(sale) > 0);
+  const packageSalesWithoutWeight = sales.filter((sale) => sale.unit !== 'كيلوغرام' && getSaleKgEquivalent(sale) === 0).length;
+  const knownWeightRevenue = salesWithKnownWeight.reduce((acc, sale) => acc + sale.totalAmount, 0);
+  const knownWeightLabor = salesWithKnownWeight.reduce((acc, sale) => acc + sale.laborCost, 0) + extraLabor;
+  const avgPrice = totalKgSold > 0 ? knownWeightRevenue / totalKgSold : 0;
 
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-4xl w-full my-6 overflow-hidden max-h-[92vh] flex flex-col">
+    <ModalPortal>
+    <div className="fw-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-xs overflow-y-auto">
+      <div role="dialog" aria-modal="true" aria-label="كشف الحساب الختامي لموسم ورق العنب" className="fw-modal-surface bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-4xl w-full my-6 overflow-hidden max-h-[92vh] flex flex-col">
         {/* Modal Controls (Not printed) */}
         <div className="p-4 bg-stone-100 border-b border-stone-200 flex items-center justify-between no-print shrink-0">
           <div>
@@ -88,7 +95,8 @@ export const SeasonReportModal: React.FC<SeasonReportModalProps> = ({
                 التقرير المالي لموسم ورق العنب الفرنسي ({settings.seasonName})
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                المزارع المسؤول: {settings.farmerName} · الموقع: {settings.location}
+                {settings.farmerName.trim() && <>المزارع المسؤول: {settings.farmerName} · </>}
+                الموقع: {settings.location}
               </p>
             </div>
 
@@ -136,9 +144,14 @@ export const SeasonReportModal: React.FC<SeasonReportModalProps> = ({
           <div className="flex justify-between items-center bg-stone-100/70 p-3 rounded-lg text-xs font-mono text-stone-700">
             <span>إجمالي الكمية المقطوفة والمباعة: <strong>{formatNumber(totalKgSold)} كغ</strong></span>
             <span>متوسط سعر البيع للكيلو: <strong>{formatCurrency(avgPrice, settings.currency)}</strong></span>
-            <span>متوسط تكلفة قطاف الكيلو: <strong>{formatCurrency(totalKgSold > 0 ? totalAllLabor / totalKgSold : 0, settings.currency)}</strong></span>
+            <span>متوسط تكلفة قطاف الكيلو: <strong>{formatCurrency(totalKgSold > 0 ? knownWeightLabor / totalKgSold : 0, settings.currency)}</strong></span>
           </div>
 
+          {packageSalesWithoutWeight > 0 && (
+            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              لم يُحتسب وزن {packageSalesWithoutWeight} عملية بيع قديمة بوحدة تعبئة لعدم توفر وزن الوحدة.
+            </p>
+          )}
           {/* Sales Breakdown */}
           <div className="space-y-3">
             <h3 className="text-sm font-bold text-stone-900 border-b border-stone-200 pb-1">
@@ -162,7 +175,7 @@ export const SeasonReportModal: React.FC<SeasonReportModalProps> = ({
                   <tr key={s.id}>
                     <td className="py-2 px-3 text-stone-500">{formatDateArabic(s.date)}</td>
                     <td className="py-2 px-3 font-sans font-medium text-stone-900">{s.buyerName}</td>
-                    <td className="py-2 px-3">{formatNumber(s.quantity)} {s.unit}</td>
+                    <td className="py-2 px-3">{formatNumber(s.quantity)} {s.unit}{s.unit !== 'كيلوغرام' && s.weightPerUnitKg ? ` (${formatNumber(s.weightPerUnitKg)} كغ/وحدة)` : ''}</td>
                     <td className="py-2 px-3">{formatCurrency(s.unitPrice, settings.currency)}</td>
                     <td className="py-2 px-3 text-amber-700">{formatCurrency(s.laborCost, settings.currency)}</td>
                     <td className="py-2 px-3 font-bold">{formatCurrency(s.totalAmount, settings.currency)}</td>
@@ -215,5 +228,6 @@ export const SeasonReportModal: React.FC<SeasonReportModalProps> = ({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };

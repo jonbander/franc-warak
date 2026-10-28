@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>إدارة إعلان التطبيق</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f5f5f4;color:#1c1917;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px}.card{max-width:620px;margin:6vh auto;background:#fff;border:1px solid #e7e5e4;border-radius:20px;padding:24px;box-shadow:0 12px 32px #0000000b}h1{font-size:22px;margin:0 0 8px}p{color:#78716c;line-height:1.7}label{display:block;font-weight:650;margin:18px 0 7px}input,textarea{width:100%;border:1px solid #d6d3d1;border-radius:10px;padding:12px;font:inherit}textarea{min-height:150px;resize:vertical}button{border:0;border-radius:10px;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer}.primary{background:#065f46;color:white}.secondary{background:#f5f5f4;color:#44403c}.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.status{margin-top:14px;padding:10px;border-radius:10px;background:#f5f5f4;font-size:14px;white-space:pre-wrap}.hidden{display:none}.check{display:flex;align-items:center;gap:9px}.check input{width:auto}.warning{background:#fffbeb;border:1px solid #fde68a;padding:11px;border-radius:10px;font-size:13px}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>إدارة إعلان التطبيق</h1>
+    <p>هذه الصفحة منفصلة عن التطبيق. سجّل دخولك بحساب الإدارة لتحديث الإعلان الذي يظهر أعلى التطبيق.</p>
+    <p class="warning">لا تضع كلمات مرور أو مفاتيح إدارية في هذه الصفحة. إعداد Firebase الظاهر للعميل ليس سراً؛ الحماية تعتمد على قواعد قاعدة البيانات.</p>
+
+    <section id="login-panel">
+      <label for="email">البريد الإلكتروني للإدارة</label>
+      <input id="email" type="email" autocomplete="username">
+      <label for="password">كلمة المرور</label>
+      <input id="password" type="password" autocomplete="current-password">
+      <div class="row"><button id="login" class="primary">تسجيل الدخول</button></div>
+    </section>
+
+    <section id="editor-panel" class="hidden">
+      <label for="announcement-text">نص الإعلان (حتى 1000 حرف)</label>
+      <textarea id="announcement-text" maxlength="1000" placeholder="اكتب الإعلان هنا…"></textarea>
+      <label class="check"><input id="announcement-active" type="checkbox"> إظهار الإعلان في التطبيق</label>
+      <div class="row">
+        <button id="save" class="primary">حفظ ونشر</button>
+        <button id="hide" class="secondary">إخفاء الإعلان</button>
+        <button id="logout" class="secondary">تسجيل الخروج</button>
+      </div>
+    </section>
+    <div id="status" class="status" role="status">جارٍ التهيئة…</div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+    import { getDatabase, ref, get, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
+
+    // This must stay identical to the administrator UID in database.rules.json.
+    const ADMIN_UID = 'nLQ00ZiJqnP7unDvPeAiDbtBsuX2';
+    const status = document.getElementById('status');
+    const loginPanel = document.getElementById('login-panel');
+    const editorPanel = document.getElementById('editor-panel');
+    const setStatus = (text, isError = false) => {
+      status.textContent = text;
+      status.style.color = isError ? '#b91c1c' : '#44403c';
+    };
+
+    try {
+      const response = await fetch('./firebase-config.json', { cache: 'no-store' });
+      if (!response.ok) throw new Error('تعذر تحميل firebase-config.json');
+      const config = await response.json();
+      if (!config.apiKey || !config.databaseURL || [config.apiKey, config.databaseURL, config.projectId, config.appId].some((value) => !value || value.includes('PASTE_'))) {
+        throw new Error('يجب إعداد Firebase أولاً. راجع ملف FIREBASE_SETUP_AR.md.');
+      }
+      const app = initializeApp(config);
+      const auth = getAuth(app);
+      const database = getDatabase(app, config.databaseURL);
+      const announcementRef = ref(database, 'announcement/current');
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          loginPanel.classList.remove('hidden');
+          editorPanel.classList.add('hidden');
+          setStatus('سجّل الدخول بحساب الإدارة.');
+          return;
+        }
+        if (ADMIN_UID.startsWith('REPLACE_') || user.uid !== ADMIN_UID) {
+          await signOut(auth);
+          setStatus('هذا الحساب غير مخوّل. حدّث ADMIN_UID في الصفحة والقواعد إلى UID حساب الإدارة.', true);
+          return;
+        }
+        loginPanel.classList.add('hidden');
+        editorPanel.classList.remove('hidden');
+        try {
+          const snapshot = await get(announcementRef);
+          const value = snapshot.val() || {};
+          document.getElementById('announcement-text').value = value.text || '';
+          document.getElementById('announcement-active').checked = value.active === true;
+          setStatus('تم تسجيل الدخول.');
+        } catch (error) {
+          setStatus(`تعذر تحميل الإعلان: ${error.message}`, true);
+        }
+      });
+
+      document.getElementById('login').addEventListener('click', async () => {
+        try {
+          await signInWithEmailAndPassword(auth, document.getElementById('email').value.trim(), document.getElementById('password').value);
+        } catch (error) {
+          setStatus(`فشل تسجيل الدخول: ${error.message}`, true);
+        }
+      });
+
+      const saveAnnouncement = async (active) => {
+        const text = document.getElementById('announcement-text').value.trim();
+        if (active && !text) return setStatus('اكتب نص الإعلان أولاً أو اختر إخفاء الإعلان.', true);
+        try {
+          await set(announcementRef, { active, text, updatedAt: serverTimestamp() });
+          document.getElementById('announcement-active').checked = active;
+          setStatus(active ? 'تم نشر الإعلان؛ سيظهر عند فتح التطبيق أو العودة إليه.' : 'تم إخفاء الإعلان عن المستخدمين، ويُحدّث ذلك عند فتح التطبيق أو العودة إليه.');
+        } catch (error) {
+          setStatus(`تعذر حفظ الإعلان: ${error.message}`, true);
+        }
+      };
+      document.getElementById('save').addEventListener('click', () => saveAnnouncement(document.getElementById('announcement-active').checked));
+      document.getElementById('hide').addEventListener('click', () => saveAnnouncement(false));
+      document.getElementById('logout').addEventListener('click', () => signOut(auth));
+    } catch (error) {
+      setStatus(error.message || 'تعذر تهيئة لوحة الإدارة.', true);
+    }
+  </script>
+</body>
+</html>

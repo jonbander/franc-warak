@@ -13,21 +13,18 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({
 }) => {
   const calcQuantityId = useId();
   const calcUnitPriceId = useId();
-  const laborMethodId = useId();
-  const laborRateId = useId();
+  const laborWageId = useId();
   const extraExpensesId = useId();
 
   const [quantity, setQuantity] = useState<number>(300);
-  const [unitPrice, setUnitPrice] = useState<number>(3.30);
-  const [laborMethod, setLaborMethod] = useState<'per_kg' | 'fixed'>('per_kg');
-  const [laborRate, setLaborRate] = useState<number>(0.40); // per kg or fixed
+  const [unitPrice, setUnitPrice] = useState<string>('5000');
+  const [laborWage, setLaborWage] = useState<string>('120');
   const [extraExpenses, setExtraExpenses] = useState<number>(25); // transport / boxes
 
   // Calculated values
-  const totalRevenue = Number((quantity * unitPrice).toFixed(2));
-  const totalLaborCost = laborMethod === 'per_kg' 
-    ? Number((quantity * laborRate).toFixed(2)) 
-    : Number(laborRate.toFixed(2));
+  const unitPriceValue = Number.parseFloat(unitPrice) || 0;
+  const totalLaborCost = Number.parseFloat(laborWage) || 0;
+  const totalRevenue = Number((quantity * unitPriceValue).toFixed(2));
   
   const totalCosts = Number((totalLaborCost + extraExpenses).toFixed(2));
   const netProfit = Number((totalRevenue - totalCosts).toFixed(2));
@@ -99,7 +96,7 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({
                 السعر الإفرادي المتوقع للكيلو ({currencySymbol})
               </label>
               <span className="text-xs font-mono font-bold text-emerald-800">
-                {formatCurrency(unitPrice, currencySymbol)}/كغ
+                {formatCurrency(unitPriceValue, currencySymbol)}/كغ
               </span>
             </div>
             <input
@@ -108,71 +105,41 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({
               step="0.1"
               min="0.1"
               value={unitPrice}
-              onChange={(e) => setUnitPrice(Math.max(0.1, parseFloat(e.target.value) || 0))}
+              onChange={(e) => setUnitPrice(e.target.value)}
               className="w-full px-3 py-2 text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
             />
             <div className="flex gap-1.5 mt-2">
-              {[2.0, 2.5, 3.0, 3.2, 3.5, 4.0].map((p) => (
+              {[5000, 7500, 10000, 12500, 15000].map((p) => (
                 <button
                   key={p}
                   type="button"
-                  onClick={() => setUnitPrice(p)}
+                  onClick={() => setUnitPrice(String(p))}
                   className={`px-2 py-1 text-[11px] rounded-md font-mono transition-colors ${
-                    unitPrice === p 
+                    unitPriceValue === p
                       ? 'bg-emerald-800 text-white font-bold' 
                       : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                   }`}
                 >
-                  {p} {currencySymbol}
+                  {formatNumber(p)} {currencySymbol}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Worker Wages calculation */}
+          {/* Worker Wages */}
           <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <label htmlFor={laborMethodId} className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-amber-700" />
-                <span>طريقة احتساب أجر العمال</span>
-              </label>
-              <div className="flex text-xs bg-white rounded-md border border-amber-200 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLaborMethod('per_kg');
-                    setLaborRate(0.40);
-                  }}
-                  className={`px-2.5 py-1 ${laborMethod === 'per_kg' ? 'bg-amber-700 text-white font-semibold' : 'text-stone-600'}`}
-                >
-                  بالكيلو
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLaborMethod('fixed');
-                    setLaborRate(120);
-                  }}
-                  className={`px-2.5 py-1 ${laborMethod === 'fixed' ? 'bg-amber-700 text-white font-semibold' : 'text-stone-600'}`}
-                >
-                  مقطوعية ثابتة
-                </button>
-              </div>
-            </div>
-
             <div>
-              <label htmlFor={laborRateId} className="block text-[11px] text-stone-600 mb-1">
-                {laborMethod === 'per_kg' 
-                  ? `أجر قطاف الكيلو الواحد للعمال (${currencySymbol}/كغ)` 
-                  : `إجمالي أجر الورشة المقطوع (${currencySymbol})`}
+              <label htmlFor={laborWageId} className="text-xs font-bold text-amber-950 flex items-center gap-1.5 mb-1">
+                <Users className="w-3.5 h-3.5 text-amber-700" />
+                <span>أجور العمال ({currencySymbol})</span>
               </label>
               <input
-                id={laborRateId}
+                id={laborWageId}
                 type="number"
                 step="any"
                 min="0"
-                value={laborRate}
-                onChange={(e) => setLaborRate(Math.max(0, parseFloat(e.target.value) || 0))}
+                value={laborWage}
+                onChange={(e) => setLaborWage(e.target.value)}
                 className="w-full px-3 py-2 text-sm font-mono bg-white border border-amber-300 rounded-lg focus:outline-none"
               />
             </div>
@@ -188,7 +155,7 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({
               type="number"
               step="any"
               min="0"
-              value={extraExpenses}
+              value={extraExpenses || ''}
               onChange={(e) => setExtraExpenses(Math.max(0, parseFloat(e.target.value) || 0))}
               className="w-full px-3 py-2 text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
             />
@@ -210,7 +177,7 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({
                 {formatCurrency(totalRevenue, currencySymbol)}
               </div>
               <span className="text-[11px] text-stone-400 font-mono block">
-                {formatNumber(quantity)} كغ × {formatCurrency(unitPrice, currencySymbol)}
+                {formatNumber(quantity)} كغ × {formatCurrency(unitPriceValue, currencySymbol)}
               </span>
             </div>
 
@@ -248,7 +215,7 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({
                 type="button"
                 onClick={() => onApplyToNewSale({
                   quantity,
-                  unitPrice,
+                  unitPrice: unitPriceValue,
                   laborCost: totalLaborCost
                 })}
                 className="w-full mt-3 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5"

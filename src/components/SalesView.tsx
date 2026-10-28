@@ -1,4 +1,4 @@
-import React, { useState, useId } from 'react';
+import React, { useState, useId, useEffect } from 'react';
 import { 
   PlusCircle, 
   Search, 
@@ -12,12 +12,14 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
-import { SaleRecord, GrapeVariety, UnitType, PaymentStatus, PaymentMethod } from '../types';
+import { SaleRecord, WorkerWageRecord, GrapeVariety, UnitType, PaymentStatus, PaymentMethod } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
 import { exportSalesToCSV } from '../utils/storage';
+import { ModalPortal } from './ModalPortal';
 
 interface SalesViewProps {
   sales: SaleRecord[];
+  workerWages: WorkerWageRecord[];
   currencySymbol: string;
   onAddSale: (sale: Omit<SaleRecord, 'id' | 'createdAt'>) => void;
   onUpdateSale: (sale: SaleRecord) => void;
@@ -25,10 +27,13 @@ interface SalesViewProps {
   onViewReceipt: (sale: SaleRecord) => void;
   isAddModalOpen: boolean;
   setIsAddModalOpen: (open: boolean) => void;
+  calculatorPrefill?: { quantity: number; unitPrice: number; laborCost: number } | null;
+  onCalculatorPrefillConsumed?: () => void;
 }
 
 export const SalesView: React.FC<SalesViewProps> = ({
   sales,
+  workerWages,
   currencySymbol,
   onAddSale,
   onUpdateSale,
@@ -36,6 +41,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
   onViewReceipt,
   isAddModalOpen,
   setIsAddModalOpen,
+  calculatorPrefill,
+  onCalculatorPrefillConsumed,
 }) => {
   const buyerNameId = useId();
   const buyerPhoneId = useId();
@@ -43,8 +50,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const varietyId = useId();
   const quantityId = useId();
   const unitId = useId();
+  const weightPerUnitKgId = useId();
   const unitPriceId = useId();
   const laborCostId = useId();
+  const laborPaidAmountId = useId();
   const paymentStatusId = useId();
   const paidAmountId = useId();
   const paymentMethodId = useId();
@@ -67,14 +76,24 @@ export const SalesView: React.FC<SalesViewProps> = ({
     grapeVariety: 'ورق عنب فرنسي نخب أول (طري وفاخر)' as GrapeVariety,
     quantity: 100,
     unit: 'كيلوغرام' as UnitType,
+    weightPerUnitKg: 0,
     unitPrice: 3.0,
     laborCost: 40,
+    laborPaidAmount: 0,
     paidAmount: 300,
     paymentStatus: 'مدفوع بالكامل' as PaymentStatus,
     paymentMethod: 'نقدي (كاش)' as PaymentMethod,
     workerNotes: '',
     notes: '',
   });
+
+  useEffect(() => {
+    if (!isAddModalOpen || !calculatorPrefill) return;
+    const total = Number((calculatorPrefill.quantity * calculatorPrefill.unitPrice).toFixed(2));
+    setEditingSale(null);
+    setFormData((current) => ({ ...current, quantity: calculatorPrefill.quantity, unit: 'كيلوغرام', weightPerUnitKg: 0, unitPrice: calculatorPrefill.unitPrice, laborCost: calculatorPrefill.laborCost, laborPaidAmount: 0, paidAmount: total, paymentStatus: 'مدفوع بالكامل' }));
+    onCalculatorPrefillConsumed?.();
+  }, [isAddModalOpen, calculatorPrefill, onCalculatorPrefillConsumed]);
 
   // Derived real-time calculations
   const totalAmount = Number((formData.quantity * formData.unitPrice).toFixed(2));
@@ -91,8 +110,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
       grapeVariety: 'ورق عنب فرنسي نخب أول (طري وفاخر)',
       quantity: 100,
       unit: 'كيلوغرام',
+      weightPerUnitKg: 0,
       unitPrice: 3.2,
       laborCost: 40,
+      laborPaidAmount: 0,
       paidAmount: 320,
       paymentStatus: 'مدفوع بالكامل',
       paymentMethod: 'نقدي (كاش)',
@@ -104,6 +125,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
   // Handle open edit
   const handleOpenEdit = (sale: SaleRecord) => {
+    const linkedWage = workerWages.find((wage) => wage.relatedSaleId === sale.id);
     setEditingSale(sale);
     setFormData({
       date: sale.date,
@@ -112,8 +134,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
       grapeVariety: sale.grapeVariety,
       quantity: sale.quantity,
       unit: sale.unit,
+      weightPerUnitKg: sale.weightPerUnitKg ?? 0,
       unitPrice: sale.unitPrice,
       laborCost: sale.laborCost,
+      laborPaidAmount: sale.laborPaidAmount ?? linkedWage?.paidWage ?? 0,
       paidAmount: sale.paidAmount,
       paymentStatus: sale.paymentStatus,
       paymentMethod: sale.paymentMethod,
@@ -134,6 +158,19 @@ export const SalesView: React.FC<SalesViewProps> = ({
       alert('يرجى التأكد من إدخال كمية وسعر إفرادي صحيحين');
       return;
     }
+    if (formData.unit !== 'كيلوغرام' && (!Number.isFinite(formData.weightPerUnitKg) || formData.weightPerUnitKg <= 0)) {
+      alert('يرجى إدخال وزن صحيح بالكيلوغرام لكل وحدة تعبئة');
+      return;
+    }
+    if (!Number.isFinite(formData.paidAmount) || formData.paidAmount < 0 || formData.paidAmount > totalAmount) {
+      alert('يجب أن يكون المبلغ المدفوع بين صفر وإجمالي قيمة البيع');
+      return;
+    }
+    if (!Number.isFinite(formData.laborPaidAmount) || formData.laborPaidAmount < 0 || formData.laborPaidAmount > formData.laborCost) {
+      alert('يجب أن يكون المدفوع للعمال بين صفر وإجمالي أجرتهم');
+      return;
+    }
+    const computedPaymentStatus: PaymentStatus = formData.paidAmount <= 0 ? 'آجل (غير مدفوع)' : formData.paidAmount >= totalAmount ? 'مدفوع بالكامل' : 'دفعة جزئية';
 
     const salePayload = {
       date: formData.date,
@@ -142,12 +179,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
       grapeVariety: formData.grapeVariety,
       quantity: Number(formData.quantity),
       unit: formData.unit,
+      weightPerUnitKg: formData.unit === 'كيلوغرام' ? undefined : Number(formData.weightPerUnitKg),
       unitPrice: Number(formData.unitPrice),
       laborCost: Number(formData.laborCost),
+      laborPaidAmount: Number(formData.laborPaidAmount),
       totalAmount,
       netAmount,
       paidAmount: Number(formData.paidAmount),
-      paymentStatus: formData.paymentStatus,
+      paymentStatus: computedPaymentStatus,
       paymentMethod: formData.paymentMethod,
       workerNotes: formData.workerNotes.trim(),
       notes: formData.notes.trim(),
@@ -558,13 +597,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
       {/* Add / Edit Sale Modal as Bottom Sheet on Mobile */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl border border-stone-200 shadow-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
+        <ModalPortal>
+        <div className="fw-modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/75 backdrop-blur-xs overflow-y-auto">
+          <div role="dialog" aria-modal="true" aria-label={editingSale ? 'تعديل عملية بيع' : 'إضافة عملية بيع'} className="fw-modal-surface bg-white rounded-t-3xl sm:rounded-2xl border border-stone-200 shadow-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-y-auto overscroll-contain">
             {/* Grab Handle for touch screen */}
             <div className="w-12 h-1 bg-stone-300 rounded-full mx-auto sm:hidden mt-3 mb-1" />
 
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between sticky top-0 bg-white z-10">
+            <div className="fw-modal-sticky-header p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between sticky top-0 bg-white z-10">
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-stone-900">
                   {editingSale ? 'تعديل عملية بيع ورق عنب' : 'إضافة عملية بيع ورق عنب فرنسي'}
@@ -670,13 +710,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       step="any"
                       min="0.1"
                       required
-                      value={formData.quantity}
+                      value={formData.quantity || ''}
                       onChange={(e) => {
                         const val = parseFloat(e.target.value) || 0;
                         setFormData({ 
                           ...formData, 
                           quantity: val,
-                          paidAmount: Number((val * formData.unitPrice).toFixed(2))
+                          paidAmount: Number((val * formData.unitPrice).toFixed(2)),
+                          paymentStatus: 'مدفوع بالكامل'
                         });
                       }}
                       className="w-full px-3 py-2 text-sm font-mono bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
@@ -701,6 +742,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     </select>
                   </div>
 
+                  {formData.unit !== 'كيلوغرام' && (
+                    <div>
+                      <label htmlFor={weightPerUnitKgId} className="block text-[11px] font-semibold text-stone-700 mb-1">وزن الوحدة (كغ) *</label>
+                      <input id={weightPerUnitKgId} type="number" step="any" min="0.01" required value={formData.weightPerUnitKg || ''} onChange={(e) => setFormData({ ...formData, weightPerUnitKg: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 text-sm font-mono bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+                      <span className="text-[10px] text-stone-500">أدخل الوزن الفعلي لوحدة هذه الصفقة</span>
+                    </div>
+                  )}
+
                   {/* Unit Price (السعر الإفرادي) */}
                   <div>
                     <label htmlFor={unitPriceId} className="block text-[11px] font-semibold text-stone-700 mb-1">
@@ -712,13 +761,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       step="any"
                       min="0.01"
                       required
-                      value={formData.unitPrice}
+                      value={formData.unitPrice || ''}
                       onChange={(e) => {
                         const val = parseFloat(e.target.value) || 0;
                         setFormData({ 
                           ...formData, 
                           unitPrice: val,
-                          paidAmount: Number((formData.quantity * val).toFixed(2))
+                          paidAmount: Number((formData.quantity * val).toFixed(2)),
+                          paymentStatus: 'مدفوع بالكامل'
                         });
                       }}
                       className="w-full px-3 py-2 text-sm font-mono bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
@@ -736,10 +786,26 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       step="any"
                       min="0"
                       required
-                      value={formData.laborCost}
+                      value={formData.laborCost || ''}
                       onChange={(e) => setFormData({ ...formData, laborCost: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 text-sm font-mono bg-white border border-amber-300 text-amber-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600"
                     />
+                  </div>
+                  <div>
+                    <label htmlFor={laborPaidAmountId} className="block text-[11px] font-semibold text-stone-700 mb-1">
+                      المدفوع للعمال ({currencySymbol})
+                    </label>
+                    <input
+                      id={laborPaidAmountId}
+                      type="number"
+                      step="any"
+                      min="0"
+                      max={formData.laborCost}
+                      value={formData.laborPaidAmount || ''}
+                      onChange={(e) => setFormData({ ...formData, laborPaidAmount: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 text-sm font-mono bg-white border border-emerald-300 text-emerald-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                    />
+                    <span className="text-[10px] text-stone-500">سيُضاف تلقائياً إلى سجل أجور العمال</span>
                   </div>
                 </div>
 
@@ -788,7 +854,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       setFormData({ 
                         ...formData, 
                         paymentStatus: st,
-                        paidAmount: st === 'مدفوع بالكامل' ? totalAmount : st === 'آجل (غير مدفوع)' ? 0 : formData.paidAmount
+                        paidAmount: st === 'مدفوع بالكامل' ? totalAmount : st === 'آجل (غير مدفوع)' ? 0 : (formData.paidAmount > 0 && formData.paidAmount < totalAmount ? formData.paidAmount : Number((totalAmount / 2).toFixed(2)))
                       });
                     }}
                     className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600 text-stone-800"
@@ -806,9 +872,11 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   <input
                     id={paidAmountId}
                     type="number"
+                    min="0"
+                    max={totalAmount}
                     step="any"
-                    value={formData.paidAmount}
-                    onChange={(e) => setFormData({ ...formData, paidAmount: parseFloat(e.target.value) || 0 })}
+                    value={formData.paidAmount || ''}
+                    onChange={(e) => { const paidAmount = parseFloat(e.target.value) || 0; const paymentStatus: PaymentStatus = paidAmount <= 0 ? 'آجل (غير مدفوع)' : paidAmount >= totalAmount ? 'مدفوع بالكامل' : 'دفعة جزئية'; setFormData({ ...formData, paidAmount, paymentStatus }); }}
                     className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-600"
                   />
                   {remainingAmount > 0 && (
@@ -888,6 +956,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

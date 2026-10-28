@@ -8,14 +8,21 @@ import {
   Smartphone, 
   Monitor, 
   Menu, 
-  X 
+  X,
+  Settings,
+  Info,
+  MessageCircle,
+  CircleHelp,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { AVAILABLE_CURRENCIES } from '../data/initialData';
-import { SeasonSettings } from '../types';
+import { AppTab, SeasonSettings } from '../types';
+import { ModalPortal } from './ModalPortal';
 
 interface MobileTopBarProps {
   currentTab: string;
-  setCurrentTab: (tab: 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator') => void;
+  setCurrentTab: (tab: AppTab) => void;
   settings: SeasonSettings;
   onCurrencyChange: (currency: string) => void;
   onOpenReport: () => void;
@@ -23,6 +30,8 @@ interface MobileTopBarProps {
   onResetData: () => void;
   isSimulatorMode: boolean;
   setIsSimulatorMode: (val: boolean) => void;
+  theme: 'light' | 'dark';
+  onThemeToggle: () => void;
 }
 
 export const MobileTopBar: React.FC<MobileTopBarProps> = ({
@@ -35,15 +44,31 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
   onResetData,
   isSimulatorMode,
   setIsSimulatorMode,
+  theme,
+  onThemeToggle,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-xs no-print">
+      <header className="fw-app-topbar sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-xs no-print">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between gap-2">
           {/* Brand Slot */}
           <div className="flex items-center gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={onThemeToggle}
+              aria-label={theme === 'dark' ? 'التبديل إلى الثيم الفاتح' : 'التبديل إلى الثيم الداكن'}
+              aria-pressed={theme === 'dark'}
+              title={theme === 'dark' ? 'التبديل إلى الثيم الفاتح' : 'التبديل إلى الثيم الداكن'}
+              className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${
+                theme === 'dark'
+                  ? 'bg-stone-800 border-stone-700 text-amber-200 hover:bg-stone-700'
+                  : 'bg-stone-100 border-stone-200 text-stone-700 hover:bg-stone-200'
+              }`}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
             <div className="w-8 h-8 rounded-lg bg-emerald-800 text-white flex items-center justify-center shrink-0 shadow-xs">
               <Sprout className="w-4.5 h-4.5 text-emerald-100" />
             </div>
@@ -52,7 +77,7 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
                 ورق العنب الفرنسي
               </h1>
               <span className="text-[10px] text-stone-500 block truncate font-mono">
-                {settings.farmName}
+                {settings.farmerName || settings.farmName}
               </span>
             </div>
           </div>
@@ -119,8 +144,9 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
 
       {/* Mobile Drawer Menu Sheet */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
-          <div className="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+        <ModalPortal>
+        <div className="fw-modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
+          <div role="dialog" aria-modal="true" aria-label="إعدادات وقوائم الموسم" className="fw-app-drawer fw-modal-surface bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             {/* Grab Handle for mobile */}
             <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto sm:hidden mb-1" />
 
@@ -138,6 +164,70 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
             </div>
 
             <div className="space-y-1 text-xs">
+              <button
+                onClick={() => {
+                  setCurrentTab('chat');
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 text-stone-800 hover:bg-stone-50 rounded-xl text-right font-medium transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center shrink-0">
+                  <MessageCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-stone-900">الدردشة العامة</div>
+                  <div className="text-[11px] text-stone-500">تواصل مع مستخدمي التطبيق</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentTab('settings');
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 text-stone-800 hover:bg-stone-50 rounded-xl text-right font-medium transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-stone-900">إدارة المزارع</div>
+                  <div className="text-[11px] text-stone-500">بيانات المزارع والنسخ الاحتياطية والأرشيف</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentTab('about');
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 text-stone-800 hover:bg-stone-50 rounded-xl text-right font-medium transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                  <Info className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-stone-900">حول التطبيق</div>
+                  <div className="text-[11px] text-stone-500">رقم النسخة ومعلومات التطبيق</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentTab('help');
+                  setIsMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 text-stone-800 hover:bg-stone-50 rounded-xl text-right font-medium transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-800 flex items-center justify-center shrink-0">
+                  <CircleHelp className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-stone-900">المساعدة</div>
+                  <div className="text-[11px] text-stone-500">شرح استخدام صفحات وعمليات التطبيق</div>
+                </div>
+              </button>
+
               <button
                 onClick={() => {
                   onOpenReport();
@@ -215,8 +305,8 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
                   <RotateCcw className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold">استعادة البيانات الافتراضية للموسم</div>
-                  <div className="text-[11px] text-stone-500">إعادة تعيين البيانات للقيم النموذجية</div>
+                  <div className="font-bold">مسح بيانات الموسم</div>
+                  <div className="text-[11px] text-stone-500">حذف المبيعات والأجور والمصاريف من هذا الجهاز</div>
                 </div>
               </button>
             </div>
@@ -226,6 +316,7 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </>
   );

@@ -10,17 +10,21 @@ import {
   DollarSign,
   ChevronLeft,
   Calendar,
-  Sparkles
+  Sparkles,
+  MessageCircle,
+  CircleHelp
 } from 'lucide-react';
-import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../types';
+import { AppTab, SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
+import { getSaleKgEquivalent } from '../utils/units';
+import vineyardImage from '../assets/images/vineyard_grape_leaves_1792997175000.jpg';
 
 interface DashboardViewProps {
   sales: SaleRecord[];
   expenses: ExpenseRecord[];
   workerWages: WorkerWageRecord[];
   settings: SeasonSettings;
-  onNavigate: (tab: 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator') => void;
+  onNavigate: (tab: AppTab) => void;
   onOpenAddSale: () => void;
   onOpenAddExpense: () => void;
   onOpenAddWorker: () => void;
@@ -58,13 +62,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const profitMargin = totalSalesRevenue > 0 ? (netSeasonProfit / totalSalesRevenue) * 100 : 0;
   
   // Total quantity
-  const totalKgSold = sales.reduce((acc, curr) => {
-    // If unit is kg, add directly, if box estimate 5kg average or keep raw
-    return acc + curr.quantity;
-  }, 0);
+  const totalKgSold = sales.reduce((acc, curr) => acc + getSaleKgEquivalent(curr), 0);
+  const salesWithKnownWeight = sales.filter((sale) => getSaleKgEquivalent(sale) > 0);
+  const packageSalesWithoutWeight = sales.filter((sale) => sale.unit !== 'كيلوغرام' && getSaleKgEquivalent(sale) === 0).length;
+  const knownWeightRevenue = salesWithKnownWeight.reduce((acc, sale) => acc + sale.totalAmount, 0);
+  const knownWeightLabor = salesWithKnownWeight.reduce((acc, sale) => acc + sale.laborCost, 0) + extraWorkerWages;
 
-  const averagePricePerUnit = totalKgSold > 0 ? totalSalesRevenue / totalKgSold : 0;
-  const averageLaborPerUnit = totalKgSold > 0 ? totalLaborCostAll / totalKgSold : 0;
+  const averagePricePerUnit = totalKgSold > 0 ? knownWeightRevenue / totalKgSold : 0;
+  const averageLaborPerUnit = totalKgSold > 0 ? knownWeightLabor / totalKgSold : 0;
 
   // Unpaid sales receivables
   const totalReceivables = sales.reduce((acc, curr) => {
@@ -89,7 +94,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="relative rounded-2xl overflow-hidden border border-stone-200 shadow-xs bg-stone-900 text-white">
         <div className="absolute inset-0 z-0">
           <img
-            src="/src/assets/images/vineyard_grape_leaves_1792997175000.jpg"
+            src={vineyardImage}
             alt="كروم ورق العنب الفرنسي"
             className="w-full h-full object-cover opacity-35"
             referrerPolicy="no-referrer"
@@ -104,8 +109,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span>{settings.seasonName}</span>
               <span aria-hidden="true">·</span>
               <span>{settings.farmName}</span>
-              <span aria-hidden="true">·</span>
-              <span>المزارع: {settings.farmerName}</span>
+              {settings.farmerName.trim() && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>المزارع: {settings.farmerName}</span>
+                </>
+              )}
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               إدارة موسم ورق العنب الفرنسي
@@ -118,8 +127,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Quick Target Progress */}
           <div className="bg-stone-900/80 backdrop-blur-xs p-4 rounded-xl border border-stone-700/60 w-full md:w-72 shrink-0">
             <div className="flex justify-between items-center text-xs text-stone-300 mb-1.5">
-              <span>هدف القطف ({formatNumber(settings.targetHarvestKg)} كغ)</span>
-              <span className="font-mono font-bold text-emerald-400">{targetProgress}%</span>
+              <span>هدف القطف ({settings.targetHarvestKg > 0 ? `${formatNumber(settings.targetHarvestKg)} كغ` : 'غير محدد'})</span>
+              <span className="font-mono font-bold text-emerald-400">{settings.targetHarvestKg > 0 ? `${targetProgress}%` : '—'}</span>
             </div>
             <div className="w-full bg-stone-700 rounded-full h-2.5 overflow-hidden">
               <div 
@@ -129,12 +138,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div className="mt-2 text-[11px] text-stone-400 flex justify-between font-mono">
               <span>تم قطف وبيع: {formatNumber(totalKgSold)} كغ</span>
-              <span>المتبقي: {formatNumber(Math.max(0, settings.targetHarvestKg - totalKgSold))} كغ</span>
+              <span>المتبقي: {settings.targetHarvestKg > 0 ? `${formatNumber(Math.max(0, settings.targetHarvestKg - totalKgSold))} كغ` : '—'}</span>
             </div>
           </div>
         </div>
       </div>
 
+      {packageSalesWithoutWeight > 0 && (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          لا يشمل إجمالي الكيلوغرامات {packageSalesWithoutWeight} عملية بيع قديمة بوحدة تعبئة لم يُسجل وزنها. عدّل كل عملية وأدخل وزن الوحدة لاحتسابها.
+        </p>
+      )}
       {/* Main KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Sales Revenue */}
@@ -191,7 +205,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Net Season Profit */}
-        <div className="bg-emerald-900 text-white p-5 rounded-xl border border-emerald-950 shadow-xs">
+        <div className="fw-net-profit-card bg-emerald-900 text-white p-5 rounded-xl border border-emerald-950 shadow-xs">
           <div className="flex items-center justify-between text-emerald-200 mb-2">
             <span className="text-xs font-medium">صافي أرباح الموسم</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-800 text-emerald-100 flex items-center justify-center">
@@ -231,7 +245,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div>
           <span className="text-stone-500 block mb-0.5">عائد الكيلو الصافي بعد التكاليف</span>
           <span className="text-sm font-bold font-mono text-emerald-700">
-            {formatCurrency(totalKgSold > 0 ? netSeasonProfit / totalKgSold : 0, settings.currency)}
+            {packageSalesWithoutWeight > 0 ? 'غير متاح حتى إدخال أوزان السجلات القديمة' : formatCurrency(totalKgSold > 0 ? netSeasonProfit / totalKgSold : 0, settings.currency)}
           </span>
         </div>
       </div>
@@ -326,7 +340,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                   <div className="text-xs text-stone-500 flex items-center gap-2">
                     <span className="font-mono font-medium text-stone-700">
-                      {formatNumber(sale.quantity)} {sale.unit}
+                      {formatNumber(sale.quantity)} {sale.unit}{sale.unit !== 'كيلوغرام' && sale.weightPerUnitKg ? ` (${formatNumber(sale.weightPerUnitKg)} كغ/وحدة)` : ''}
                     </span>
                     <span aria-hidden="true">×</span>
                     <span className="font-mono">
@@ -434,10 +448,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Quick Action Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
         <button
           onClick={onOpenAddSale}
-          className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-right transition-colors group flex items-start gap-3"
+          className="fw-quick-action-card p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-right transition-colors group flex items-start gap-3"
         >
           <div className="p-2 rounded-lg bg-emerald-700 text-white shrink-0 group-hover:scale-105 transition-transform">
             <PlusCircle className="w-5 h-5" />
@@ -454,7 +468,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <button
           onClick={onOpenAddExpense}
-          className="p-4 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-right transition-colors group flex items-start gap-3"
+          className="fw-quick-action-card p-4 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-right transition-colors group flex items-start gap-3"
         >
           <div className="p-2 rounded-lg bg-rose-700 text-white shrink-0 group-hover:scale-105 transition-transform">
             <Receipt className="w-5 h-5" />
@@ -471,7 +485,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <button
           onClick={onOpenAddWorker}
-          className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 text-right transition-colors group flex items-start gap-3"
+          className="fw-quick-action-card p-4 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 text-right transition-colors group flex items-start gap-3"
         >
           <div className="p-2 rounded-lg bg-amber-700 text-white shrink-0 group-hover:scale-105 transition-transform">
             <Users className="w-5 h-5" />
@@ -483,6 +497,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <p className="text-xs text-stone-600 mt-0.5">
               حساب اليوميات وأجور القطاف بالكيلو ومتابعة المدفوع والمتبقي للورش
             </p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onNavigate('chat')}
+          className="fw-quick-action-card p-4 rounded-xl border border-sky-200 bg-sky-50/50 hover:bg-sky-50 text-right transition-colors group flex items-start gap-3"
+        >
+          <div className="p-2 rounded-lg bg-sky-700 text-white shrink-0 group-hover:scale-105 transition-transform">
+            <MessageCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-stone-900 group-hover:text-sky-800">الدردشة العامة</h4>
+            <p className="text-xs text-stone-600 mt-0.5">انتقل إلى غرفة مستخدمي التطبيق</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onNavigate('help')}
+          className="fw-quick-action-card p-4 rounded-xl border border-violet-200 bg-violet-50/50 hover:bg-violet-50 text-right transition-colors group flex items-start gap-3"
+        >
+          <div className="p-2 rounded-lg bg-violet-700 text-white shrink-0 group-hover:scale-105 transition-transform">
+            <CircleHelp className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-stone-900 group-hover:text-violet-800">المساعدة</h4>
+            <p className="text-xs text-stone-600 mt-0.5">شرح استخدام التطبيق وعملياته</p>
           </div>
         </button>
       </div>

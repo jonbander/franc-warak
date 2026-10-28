@@ -10,8 +10,9 @@ import {
   Clock,
   Briefcase
 } from 'lucide-react';
-import { WorkerWageRecord, SaleRecord, WorkerPaymentType } from '../types';
+import { WorkerWageRecord, SaleRecord } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
+import { ModalPortal } from './ModalPortal';
 
 interface WorkersViewProps {
   workerWages: WorkerWageRecord[];
@@ -34,45 +35,35 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
   isAddModalOpen,
   setIsAddModalOpen,
 }) => {
-  const workerOrLeaderNameId = useId();
+  const taskTypeId = useId();
   const dateId = useId();
-  const workTypeId = useId();
-  const workerCountId = useId();
-  const unitsOrHoursId = useId();
-  const ratePerUnitId = useId();
+  const totalWageId = useId();
   const paidWageId = useId();
   const notesId = useId();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState<string>('all');
   const [editingWage, setEditingWage] = useState<WorkerWageRecord | null>(null);
 
   // Form
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    workerOrLeaderName: '',
-    workType: 'أجر بالوزن (بالكيلو)' as WorkerPaymentType,
-    workerCount: 5,
-    unitsOrHours: 250,
-    ratePerUnit: 0.40,
-    paidWage: 100,
+    taskType: '',
+    totalWage: 0,
+    paidWage: 0,
     notes: '',
   });
 
-  // Calculate total and remaining
-  const calculatedTotalWage = Number((formData.unitsOrHours * formData.ratePerUnit).toFixed(2));
-  const remainingWage = Number((calculatedTotalWage - formData.paidWage).toFixed(2));
+  // The form records the agreed total for a task directly; legacy unit fields remain in storage for old records.
+  const calculatedTotalWage = Number(formData.totalWage.toFixed(2));
+  const remainingWage = Number(Math.max(0, calculatedTotalWage - formData.paidWage).toFixed(2));
 
   const handleOpenAdd = () => {
     setEditingWage(null);
     setFormData({
       date: new Date().toISOString().split('T')[0],
-      workerOrLeaderName: '',
-      workType: 'أجر بالوزن (بالكيلو)',
-      workerCount: 5,
-      unitsOrHours: 200,
-      ratePerUnit: 0.40,
-      paidWage: 80,
+      taskType: '',
+      totalWage: 0,
+      paidWage: 0,
       notes: '',
     });
     setIsAddModalOpen(true);
@@ -82,11 +73,8 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
     setEditingWage(wage);
     setFormData({
       date: wage.date,
-      workerOrLeaderName: wage.workerOrLeaderName,
-      workType: wage.workType,
-      workerCount: wage.workerCount,
-      unitsOrHours: wage.unitsOrHours,
-      ratePerUnit: wage.ratePerUnit,
+      taskType: wage.taskType || wage.workerOrLeaderName,
+      totalWage: wage.totalWage,
       paidWage: wage.paidWage,
       notes: wage.notes || '',
     });
@@ -95,25 +83,31 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.workerOrLeaderName.trim()) {
-      alert('يرجى إدخال اسم العامل أو رئيس الورشة');
+    if (!formData.taskType.trim()) {
+      alert('يرجى إدخال نوع المهمة');
       return;
     }
-    if (formData.unitsOrHours <= 0 || formData.ratePerUnit <= 0) {
-      alert('يرجى إدخال قيم صحيحة للكمية ومعدل الأجر');
+    if (!Number.isFinite(formData.totalWage) || formData.totalWage <= 0) {
+      alert('يرجى إدخال مبلغ صحيح لأجور العمال');
+      return;
+    }
+    if (!Number.isFinite(formData.paidWage) || formData.paidWage < 0 || formData.paidWage > calculatedTotalWage) {
+      alert('يجب أن يكون الأجر المدفوع بين صفر وإجمالي الأجر المستحق');
       return;
     }
 
     const payload = {
       date: formData.date,
-      workerOrLeaderName: formData.workerOrLeaderName.trim(),
-      workType: formData.workType,
-      workerCount: Number(formData.workerCount) || 1,
-      unitsOrHours: Number(formData.unitsOrHours),
-      ratePerUnit: Number(formData.ratePerUnit),
+      taskType: formData.taskType.trim(),
+      workerOrLeaderName: formData.taskType.trim(),
+      workType: 'أجر مقطوع للورشة' as const,
+      workerCount: 1,
+      unitsOrHours: 1,
+      ratePerUnit: calculatedTotalWage,
       totalWage: calculatedTotalWage,
       paidWage: Number(formData.paidWage),
       remainingWage,
+      relatedSaleId: editingWage?.relatedSaleId,
       notes: formData.notes.trim(),
     };
 
@@ -134,12 +128,10 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
   // Filter
   const filteredWages = workerWages.filter((w) => {
     const matchesSearch = 
-      w.workerOrLeaderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (w.taskType || w.workerOrLeaderName).toLowerCase().includes(searchTerm.toLowerCase()) ||
       (w.notes && w.notes.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesType = selectedType === 'all' || w.workType === selectedType;
-
-    return matchesSearch && matchesType;
+    return matchesSearch;
   });
 
   // Aggregates
@@ -159,7 +151,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
             سجل أجور عمال القطاف والورشات
           </h2>
           <p className="text-xs sm:text-sm text-stone-500 mt-1">
-            متابعة دقيقة لأجور العمال باليومية أو بالوزن (بالكيلو والصندوق)، مع بيان المدفوع والمستحقات المتبقية
+            تسجيل نوع المهمة وإجمالي أجور العمال ومتابعة المدفوع والمتبقي
           </p>
         </div>
 
@@ -168,7 +160,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
           className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-xs transition-colors"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>تسجيل أجر ورشة جديد</span>
+          <span>إضافة ورشة</span>
         </button>
       </div>
 
@@ -207,7 +199,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
       <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
         <Users className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
         <p className="leading-relaxed">
-          <strong>ملاحظة زراعية هامة:</strong> قطاف ورق العنب الفرنسي يتطلب عناية فائقة بقطف الأوراق الغضة بدون تمزيق، ويُفضل إعطاء العمال حافزاً بالوزن (مثلاً 0.35$ - 0.45$ للكيلو النظيف والمفرود) أو باليومية لضمان سرعة القطف ونظافة المحصول.
+          <strong>تسجيل أجور الورشة:</strong> اكتب وصف المهمة مثل تجهيز الأرض أو تجهيز القصب أو أجور الرش، ثم أدخل إجمالي أجور العمال والمبلغ المدفوع. يحسب التطبيق المتبقي تلقائياً.
         </p>
       </div>
 
@@ -224,20 +216,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedType}
-            aria-label="تصفية حسب نوع العمل أو الحساب"
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:bg-white text-stone-700 cursor-pointer"
-          >
-            <option value="all">كل أنواع الحساب ({workerWages.length})</option>
-            <option value="أجر بالوزن (بالكيلو)">أجر بالوزن (بالكيلو)</option>
-            <option value="أجر يومي">أجر يومي</option>
-            <option value="أجر بالصندوق">أجر بالصندوق</option>
-            <option value="أجر مقطوع للورشة">أجر مقطوع للورشة</option>
-          </select>
-        </div>
+        <span className="text-xs text-stone-500">عدد السجلات: {filteredWages.length}</span>
       </div>
 
       {/* Mobile Wages Cards (Visible on mobile screens) */}
@@ -249,11 +228,11 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
           >
             <div className="flex items-start justify-between gap-2">
               <div className="space-y-0.5">
-                <h3 className="font-bold text-stone-900 text-sm">{wage.workerOrLeaderName}</h3>
+                <h3 className="font-bold text-stone-900 text-sm">{wage.taskType || wage.workerOrLeaderName}</h3>
                 <div className="text-[11px] text-stone-500 flex items-center gap-1.5">
                   <span className="font-mono">{formatDateArabic(wage.date)}</span>
                   <span aria-hidden="true">·</span>
-                  <span>{wage.workType}</span>
+                  <span>{wage.taskType ? 'أجور مهمة' : wage.workType}</span>
                 </div>
               </div>
 
@@ -273,7 +252,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
 
             <div className="bg-stone-50 p-2.5 rounded-xl flex justify-between items-center text-xs">
               <span className="text-stone-600">
-                {formatNumber(wage.unitsOrHours)} {wage.workType.includes('كيلو') ? 'كغ' : 'يوم'} × {formatCurrency(wage.ratePerUnit, currencySymbol)}
+                أجور العمال: {formatCurrency(wage.totalWage, currencySymbol)}
               </span>
               <span className="text-emerald-800 font-mono font-semibold">
                 المدفوع: {formatCurrency(wage.paidWage, currencySymbol)}
@@ -282,7 +261,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
 
             <div className="flex items-center justify-between pt-1 border-t border-stone-100 text-xs">
               <span className="text-[11px] text-stone-500">
-                عدد العمال: {wage.workerCount}
+                {wage.taskType ? 'نوع المهمة' : `عدد العمال: ${wage.workerCount}`}
               </span>
 
               <div className="flex items-center gap-1">
@@ -323,10 +302,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
             <thead className="bg-stone-50 text-stone-600 font-semibold border-b border-stone-200">
               <tr>
                 <th className="py-3 px-4">التاريخ</th>
-                <th className="py-3 px-4">العامل / رئيس الورشة</th>
-                <th className="py-3 px-4">طريقة الحساب</th>
-                <th className="py-3 px-4">الكمية / الأيام</th>
-                <th className="py-3 px-4">السعر / المعدل</th>
+                <th className="py-3 px-4">نوع المهمة / العامل</th>
                 <th className="py-3 px-4 font-bold text-stone-900">إجمالي الأجر</th>
                 <th className="py-3 px-4 text-emerald-800">المدفوع</th>
                 <th className="py-3 px-4 text-amber-700">المتبقي</th>
@@ -341,22 +317,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <div className="font-semibold text-stone-900">{wage.workerOrLeaderName}</div>
-                    <div className="text-[11px] text-stone-500 mt-0.5">
-                      عدد العمال بالورشة: {wage.workerCount}
-                    </div>
-                  </td>
-
-                  <td className="py-3.5 px-4 whitespace-nowrap text-stone-700">
-                    {wage.workType}
-                  </td>
-
-                  <td className="py-3.5 px-4 font-mono font-medium text-stone-800 whitespace-nowrap">
-                    {formatNumber(wage.unitsOrHours)} {wage.workType.includes('كيلو') ? 'كغ' : wage.workType.includes('يومي') ? 'يوم' : 'وحدة'}
-                  </td>
-
-                  <td className="py-3.5 px-4 font-mono text-stone-700 whitespace-nowrap">
-                    {formatCurrency(wage.ratePerUnit, currencySymbol)}
+                    <div className="font-semibold text-stone-900">{wage.taskType || wage.workerOrLeaderName}</div>
                   </td>
 
                   <td className="py-3.5 px-4 font-mono font-bold text-stone-900 whitespace-nowrap">
@@ -408,7 +369,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
 
               {filteredWages.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-stone-400">
+                  <td colSpan={6} className="py-12 text-center text-stone-400">
                     <Users className="w-8 h-8 mx-auto mb-2 text-stone-300" />
                     <p className="text-sm">لا توجد سجلات أجور تطابق شروط البحث</p>
                   </td>
@@ -429,18 +390,19 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
 
       {/* Add / Edit Worker Wage Modal as Bottom Sheet */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl border border-stone-200 shadow-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto">
+        <ModalPortal>
+        <div className="fw-modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/75 backdrop-blur-xs overflow-y-auto">
+          <div role="dialog" aria-modal="true" aria-label={editingWage ? 'تعديل أجور ورشة' : 'إضافة أجور ورشة'} className="fw-modal-surface bg-white rounded-t-3xl sm:rounded-2xl border border-stone-200 shadow-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto overscroll-contain">
             {/* Grab Handle */}
             <div className="w-12 h-1 bg-stone-300 rounded-full mx-auto sm:hidden mt-3 mb-1" />
 
             <div className="p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between">
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-stone-900">
-                  {editingWage ? 'تعديل أجر ورشة عمال' : 'تسجيل أجر ورشة قطاف أو عمال'}
+                  {editingWage ? 'تعديل أجور المهمة' : 'إضافة ورشة'}
                 </h3>
                 <p className="text-[11px] sm:text-xs text-stone-500 mt-0.5">
-                  حساب الأجر المستحق بالوزن أو باليومية ومتابعة الدفع
+                  سجّل وصف المهمة ومبلغ أجور العمال مباشرة
                 </p>
               </div>
               <button
@@ -456,16 +418,16 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
 
             <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
               <div>
-                <label htmlFor={workerOrLeaderNameId} className="block text-xs font-semibold text-stone-700 mb-1">
-                  اسم العامل أو رئيس الورشة <span className="text-rose-600">*</span>
+                <label htmlFor={taskTypeId} className="block text-xs font-semibold text-stone-700 mb-1">
+                  نوع المهمة <span className="text-rose-600">*</span>
                 </label>
                 <input
-                  id={workerOrLeaderNameId}
+                  id={taskTypeId}
                   type="text"
                   required
-                  placeholder="مثال: أبو جهاد (ورشة القطاف) أو أم سامي"
-                  value={formData.workerOrLeaderName}
-                  onChange={(e) => setFormData({ ...formData, workerOrLeaderName: e.target.value })}
+                  placeholder="تجهيز الارض، تجهيز القصب، اجور رش"
+                  value={formData.taskType}
+                  onChange={(e) => setFormData({ ...formData, taskType: e.target.value })}
                   className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 focus:bg-white"
                 />
               </div>
@@ -486,79 +448,20 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor={workTypeId} className="block text-xs font-semibold text-stone-700 mb-1">
-                    طريقة الحساب
-                  </label>
-                  <select
-                    id={workTypeId}
-                    value={formData.workType}
-                    onChange={(e) => setFormData({ ...formData, workType: e.target.value as WorkerPaymentType })}
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 focus:bg-white text-stone-800"
-                  >
-                    <option value="أجر بالوزن (بالكيلو)">أجر بالوزن (بالكيلو)</option>
-                    <option value="أجر يومي">أجر يومي</option>
-                    <option value="أجر بالصندوق">أجر بالصندوق</option>
-                    <option value="أجر مقطوع للورشة">أجر مقطوع للورشة</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label htmlFor={workerCountId} className="block text-[11px] font-semibold text-stone-700 mb-1">
-                    عدد العمال
+                  <label htmlFor={totalWageId} className="block text-xs font-semibold text-stone-700 mb-1">
+                    أجور العمال ({currencySymbol}) <span className="text-rose-600">*</span>
                   </label>
                   <input
-                    id={workerCountId}
-                    type="number"
-                    min="1"
-                    value={formData.workerCount}
-                    onChange={(e) => setFormData({ ...formData, workerCount: parseInt(e.target.value) || 1 })}
-                    className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 focus:bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor={unitsOrHoursId} className="block text-[11px] font-semibold text-stone-700 mb-1">
-                    {formData.workType.includes('كيلو') ? 'الكمية (كغ)' : formData.workType.includes('يومي') ? 'عدد الأيام' : 'الوحدات'} <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    id={unitsOrHoursId}
-                    type="number"
-                    step="any"
-                    min="0.1"
-                    required
-                    value={formData.unitsOrHours}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
-                      setFormData({ 
-                        ...formData, 
-                        unitsOrHours: val,
-                        paidWage: Number((val * formData.ratePerUnit).toFixed(2))
-                      });
-                    }}
-                    className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 focus:bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor={ratePerUnitId} className="block text-[11px] font-semibold text-stone-700 mb-1">
-                    الأجر للوحدة ({currencySymbol}) <span className="text-rose-600">*</span>
-                  </label>
-                  <input
-                    id={ratePerUnitId}
+                    id={totalWageId}
                     type="number"
                     step="any"
                     min="0.01"
                     required
-                    value={formData.ratePerUnit}
+                    placeholder="أدخل إجمالي الأجور"
+                    value={formData.totalWage || ''}
                     onChange={(e) => {
-                      const val = parseFloat(e.target.value) || 0;
-                      setFormData({ 
-                        ...formData, 
-                        ratePerUnit: val,
-                        paidWage: Number((formData.unitsOrHours * val).toFixed(2))
-                      });
+                      const totalWage = parseFloat(e.target.value) || 0;
+                      setFormData({ ...formData, totalWage, paidWage: Math.min(formData.paidWage, totalWage) });
                     }}
                     className="w-full px-3 py-2 text-xs sm:text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-600 focus:bg-white"
                   />
@@ -568,7 +471,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
               {/* Wage summary banner inside modal */}
               <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 flex justify-between items-center text-xs">
                 <div>
-                  <span className="text-amber-800 block">إجمالي الأجر المستحق:</span>
+                  <span className="text-amber-800 block">إجمالي أجور العمال:</span>
                   <span className="text-base font-bold font-mono text-amber-950">
                     {formatCurrency(calculatedTotalWage, currencySymbol)}
                   </span>
@@ -576,13 +479,15 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
 
                 <div className="text-left">
                   <label htmlFor={paidWageId} className="text-amber-800 block text-[11px] font-medium">
-                    المدفوع نقداً:
+                    المدفوع:
                   </label>
                   <input
                     id={paidWageId}
                     type="number"
                     step="any"
-                    value={formData.paidWage}
+                    min="0"
+                    max={calculatedTotalWage}
+                    value={formData.paidWage || ''}
                     onChange={(e) => setFormData({ ...formData, paidWage: parseFloat(e.target.value) || 0 })}
                     className="w-28 px-2 py-1 text-xs font-mono bg-white border border-amber-300 rounded-md focus:outline-none text-left"
                   />
@@ -631,6 +536,7 @@ export const WorkersView: React.FC<WorkersViewProps> = ({
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

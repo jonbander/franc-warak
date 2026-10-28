@@ -16,6 +16,8 @@ export type PaymentStatus = 'مدفوع بالكامل' | 'دفعة جزئية' 
 
 export type PaymentMethod = 'نقدي (كاش)' | 'حوالة بنكية' | 'شيك' | 'دفع آجل';
 
+export type AppTab = 'dashboard' | 'sales' | 'expenses' | 'workers' | 'calculator' | 'settings' | 'about' | 'chat' | 'help';
+
 export interface SaleRecord {
   id: string;
   date: string;
@@ -24,8 +26,12 @@ export interface SaleRecord {
   grapeVariety: GrapeVariety;
   quantity: number;
   unit: UnitType;
+  /** Kilograms represented by one package unit; required for non-kg sales. */
+  weightPerUnitKg?: number;
   unitPrice: number;
   laborCost: number; // أجار العمال المرتبط بالعملية
+  /** Amount already paid to workers for this sale; separate from customer payments. */
+  laborPaidAmount?: number;
   totalAmount: number; // الكمية × السعر الإفرادي
   netAmount: number; // المجموع - أجار العمال
   paidAmount: number;
@@ -62,6 +68,8 @@ export type WorkerPaymentType = 'أجر يومي' | 'أجر بالوزن (بال
 export interface WorkerWageRecord {
   id: string;
   date: string;
+  /** New free-text work/task description; old records fall back to workerOrLeaderName. */
+  taskType?: string;
   workerOrLeaderName: string; // اسم العامل أو رئيس الورشة
   workType: WorkerPaymentType;
   workerCount: number;
@@ -83,4 +91,17 @@ export interface SeasonSettings {
   currency: string;
   targetHarvestKg: number;
   seasonStartDate: string;
+}
+
+export interface SeasonBackup {
+  settings: SeasonSettings;
+  sales: SaleRecord[];
+  expenses: ExpenseRecord[];
+  workers: WorkerWageRecord[];
+}
+
+export interface SeasonArchive extends SeasonBackup {
+  id: string;
+  seasonName: string;
+  archivedAt: string;
 }
