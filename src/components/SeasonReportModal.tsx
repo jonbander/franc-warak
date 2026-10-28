@@ -4,6 +4,7 @@ import { SaleRecord, ExpenseRecord, WorkerWageRecord, SeasonSettings } from '../
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
 import { getSaleKgEquivalent } from '../utils/units';
 import { exportSalesToCSV, exportExpensesToCSV } from '../utils/storage';
+import { ModalPortal } from './ModalPortal';
 
 interface SeasonReportModalProps {
   sales: SaleRecord[];
@@ -45,8 +46,9 @@ export const SeasonReportModal: React.FC<SeasonReportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-4xl w-full my-6 overflow-hidden max-h-[92vh] flex flex-col">
+    <ModalPortal>
+    <div className="fw-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-xs overflow-y-auto">
+      <div role="dialog" aria-modal="true" aria-label="كشف الحساب الختامي لموسم ورق العنب" className="fw-modal-surface bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-4xl w-full my-6 overflow-hidden max-h-[92vh] flex flex-col">
         {/* Modal Controls (Not printed) */}
         <div className="p-4 bg-stone-100 border-b border-stone-200 flex items-center justify-between no-print shrink-0">
           <div>
@@ -226,5 +228,6 @@ export const SeasonReportModal: React.FC<SeasonReportModalProps> = ({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };

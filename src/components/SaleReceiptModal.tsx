@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Printer, Sprout, CheckCircle2 } from 'lucide-react';
 import { SaleRecord, SeasonSettings } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
+import { ModalPortal } from './ModalPortal';
 
 interface SaleReceiptModalProps {
   sale: SaleRecord | null;
@@ -23,8 +24,9 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
   const remaining = Number((sale.totalAmount - sale.paidAmount).toFixed(2));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-xl w-full my-6 overflow-hidden">
+    <ModalPortal>
+    <div className="fw-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-xs overflow-y-auto">
+      <div role="dialog" aria-modal="true" aria-label="معاينة سند تسليم أو فاتورة بيع" className="fw-modal-surface bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-xl w-full my-6 overflow-hidden">
         {/* Modal Controls (Not printed) */}
         <div className="p-4 bg-stone-100 border-b border-stone-200 flex items-center justify-between no-print">
           <span className="text-xs font-semibold text-stone-700">معاينة سند تسليم / فاتورة بيع</span>
@@ -178,5 +180,6 @@ export const SaleReceiptModal: React.FC<SaleReceiptModalProps> = ({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };

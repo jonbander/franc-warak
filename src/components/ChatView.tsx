@@ -169,6 +169,10 @@ export const ChatView: React.FC<ChatViewProps> = ({ suggestedName, onOpenSetting
         </div>
       </div>
 
+      <p className="rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs leading-relaxed text-amber-950">
+        <strong>تنبيه خصوصية:</strong> هذه غرفة عامة؛ اسم المزارع والرسائل مرئية لمستخدمي التطبيق. لا ترسل أرقام هاتف أو معلومات شخصية أو مالية.
+      </p>
+
       {adminNotice && (
         <aside role="status" className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-sm leading-relaxed text-sky-950">
           <strong className="ml-1">تنبيه الإدارة:</strong>{adminNotice}

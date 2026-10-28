@@ -16,7 +16,8 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { ExpenseRecord, ExpenseCategory } from '../types';
-import { formatCurrency, formatDateArabic } from '../utils/formatters';
+import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
+import { ModalPortal } from './ModalPortal';
 import { exportExpensesToCSV } from '../utils/storage';
 
 interface ExpensesViewProps {
@@ -418,8 +419,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
       {/* Add / Edit Expense Modal as Bottom Sheet */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl border border-stone-200 shadow-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto">
+        <ModalPortal>
+        <div className="fw-modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/75 backdrop-blur-xs overflow-y-auto">
+          <div role="dialog" aria-modal="true" aria-label={editingExpense ? 'تعديل مصروف' : 'إضافة مصروف'} className="fw-modal-surface bg-white rounded-t-3xl sm:rounded-2xl border border-stone-200 shadow-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto overscroll-contain">
             {/* Grab handle for touch screens */}
             <div className="w-12 h-1 bg-stone-300 rounded-full mx-auto sm:hidden mt-3 mb-1" />
 
@@ -578,6 +580,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

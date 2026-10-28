@@ -12,10 +12,13 @@ import {
   Settings,
   Info,
   MessageCircle,
-  CircleHelp
+  CircleHelp,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { AVAILABLE_CURRENCIES } from '../data/initialData';
 import { AppTab, SeasonSettings } from '../types';
+import { ModalPortal } from './ModalPortal';
 
 interface MobileTopBarProps {
   currentTab: string;
@@ -27,6 +30,8 @@ interface MobileTopBarProps {
   onResetData: () => void;
   isSimulatorMode: boolean;
   setIsSimulatorMode: (val: boolean) => void;
+  theme: 'light' | 'dark';
+  onThemeToggle: () => void;
 }
 
 export const MobileTopBar: React.FC<MobileTopBarProps> = ({
@@ -39,6 +44,8 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
   onResetData,
   isSimulatorMode,
   setIsSimulatorMode,
+  theme,
+  onThemeToggle,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -48,6 +55,20 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between gap-2">
           {/* Brand Slot */}
           <div className="flex items-center gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={onThemeToggle}
+              aria-label={theme === 'dark' ? 'التبديل إلى الثيم الفاتح' : 'التبديل إلى الثيم الداكن'}
+              aria-pressed={theme === 'dark'}
+              title={theme === 'dark' ? 'التبديل إلى الثيم الفاتح' : 'التبديل إلى الثيم الداكن'}
+              className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${
+                theme === 'dark'
+                  ? 'bg-stone-800 border-stone-700 text-amber-200 hover:bg-stone-700'
+                  : 'bg-stone-100 border-stone-200 text-stone-700 hover:bg-stone-200'
+              }`}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
             <div className="w-8 h-8 rounded-lg bg-emerald-800 text-white flex items-center justify-center shrink-0 shadow-xs">
               <Sprout className="w-4.5 h-4.5 text-emerald-100" />
             </div>
@@ -123,8 +144,9 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
 
       {/* Mobile Drawer Menu Sheet */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
-          <div className="fw-app-drawer bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+        <ModalPortal>
+        <div className="fw-modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
+          <div role="dialog" aria-modal="true" aria-label="إعدادات وقوائم الموسم" className="fw-app-drawer fw-modal-surface bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             {/* Grab Handle for mobile */}
             <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto sm:hidden mb-1" />
 
@@ -294,6 +316,7 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </>
   );

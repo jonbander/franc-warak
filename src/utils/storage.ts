@@ -3,6 +3,7 @@ import { INITIAL_SALES, INITIAL_EXPENSES, INITIAL_WORKER_WAGES, INITIAL_SETTINGS
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { serializeCsv } from './csv';
 
 const STORAGE_KEYS = {
   SALES: 'grape_season_sales_v1',
@@ -359,9 +360,9 @@ export const exportSalesToCSV = async (sales: SaleRecord[], currencySymbol: stri
   const rows = sales.map(s => [
     s.id,
     s.date,
-    `"${s.buyerName.replace(/"/g, '""')}"`,
+    s.buyerName,
     s.buyerPhone || '',
-    `"${s.grapeVariety}"`,
+    s.grapeVariety,
     s.quantity,
     s.unit,
     s.weightPerUnitKg ?? (s.unit === 'كيلوغرام' ? 1 : ''),
@@ -372,11 +373,11 @@ export const exportSalesToCSV = async (sales: SaleRecord[], currencySymbol: stri
     s.netAmount,
     s.paymentStatus,
     s.paymentMethod,
-    `"${(s.workerNotes || '').replace(/"/g, '""')}"`,
-    `"${(s.notes || '').replace(/"/g, '""')}"`
+    s.workerNotes || '',
+    s.notes || ''
   ]);
 
-  const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const csvContent = serializeCsv(headers, rows);
   try {
     await deliverFile(`سجل_مبيعات_ورق_العنب_${new Date().toISOString().split('T')[0]}.csv`, csvContent, 'text/csv;charset=utf-8;');
   } catch (error) {
@@ -400,15 +401,15 @@ export const exportExpensesToCSV = async (expenses: ExpenseRecord[], currencySym
   const rows = expenses.map(e => [
     e.id,
     e.date,
-    `"${e.title.replace(/"/g, '""')}"`,
-    `"${e.category}"`,
+    e.title,
+    e.category,
     e.amount,
-    `"${e.paidTo.replace(/"/g, '""')}"`,
+    e.paidTo,
     e.paymentMethod,
-    `"${(e.notes || '').replace(/"/g, '""')}"`
+    e.notes || ''
   ]);
 
-  const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const csvContent = serializeCsv(headers, rows);
   try {
     await deliverFile(`سجل_مصاريف_الموسم_${new Date().toISOString().split('T')[0]}.csv`, csvContent, 'text/csv;charset=utf-8;');
   } catch (error) {

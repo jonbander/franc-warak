@@ -15,6 +15,7 @@ import {
 import { SaleRecord, WorkerWageRecord, GrapeVariety, UnitType, PaymentStatus, PaymentMethod } from '../types';
 import { formatCurrency, formatNumber, formatDateArabic } from '../utils/formatters';
 import { exportSalesToCSV } from '../utils/storage';
+import { ModalPortal } from './ModalPortal';
 
 interface SalesViewProps {
   sales: SaleRecord[];
@@ -596,13 +597,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
       {/* Add / Edit Sale Modal as Bottom Sheet on Mobile */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl border border-stone-200 shadow-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-y-auto">
+        <ModalPortal>
+        <div className="fw-modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/75 backdrop-blur-xs overflow-y-auto">
+          <div role="dialog" aria-modal="true" aria-label={editingSale ? 'تعديل عملية بيع' : 'إضافة عملية بيع'} className="fw-modal-surface bg-white rounded-t-3xl sm:rounded-2xl border border-stone-200 shadow-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[90vh] overflow-y-auto overscroll-contain">
             {/* Grab Handle for touch screen */}
             <div className="w-12 h-1 bg-stone-300 rounded-full mx-auto sm:hidden mt-3 mb-1" />
 
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between sticky top-0 bg-white z-10">
+            <div className="fw-modal-sticky-header p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between sticky top-0 bg-white z-10">
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-stone-900">
                   {editingSale ? 'تعديل عملية بيع ورق عنب' : 'إضافة عملية بيع ورق عنب فرنسي'}
@@ -954,6 +956,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

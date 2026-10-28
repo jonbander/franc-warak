@@ -41,6 +41,17 @@ import {
 } from './utils/storage';
 import { Wifi, Battery, Signal, Smartphone, Monitor } from 'lucide-react';
 
+type AppTheme = 'light' | 'dark';
+const THEME_STORAGE_KEY = 'franc-warak-theme';
+
+const loadAppTheme = (): AppTheme => {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+};
+
 export default function App() {
   // Navigation tab state
   const [currentTab, setCurrentTab] = useState<AppTab>('dashboard');
@@ -51,6 +62,7 @@ export default function App() {
   const [workerWages, setWorkerWages] = useState<WorkerWageRecord[]>([]);
   const [settings, setSettings] = useState<SeasonSettings>(loadSettings());
   const [seasonArchives, setSeasonArchives] = useState<SeasonArchive[]>(loadSeasonArchives());
+  const [theme, setTheme] = useState<AppTheme>(loadAppTheme);
   const [dataLoaded, setDataLoaded] = useState(false);
 
   // Modal States
@@ -63,6 +75,18 @@ export default function App() {
 
   // Phone Frame Simulator mode toggle (active on desktop to view as authentic phone)
   const [isSimulatorMode, setIsSimulatorMode] = useState(true);
+
+  const handleThemeToggle = () => {
+    setTheme((currentTheme) => {
+      const nextTheme: AppTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      } catch {
+        // The current session still switches themes if browser storage is unavailable.
+      }
+      return nextTheme;
+    });
+  };
 
   // Load data on startup
   useEffect(() => {
@@ -285,7 +309,7 @@ export default function App() {
 
   // Main Mobile App Content Body
   const appContent = (
-    <div className="fw-theme-dark flex flex-col min-h-full bg-stone-50 text-stone-900 pb-24">
+    <div className={`${theme === 'dark' ? 'fw-theme-dark' : 'fw-theme-light'} flex flex-col min-h-full bg-stone-50 text-stone-900 pb-24`}>
       {/* Mobile Top App Bar */}
       <MobileTopBar
         currentTab={currentTab}
@@ -297,6 +321,8 @@ export default function App() {
         onResetData={handleResetData}
         isSimulatorMode={isSimulatorMode}
         setIsSimulatorMode={setIsSimulatorMode}
+        theme={theme}
+        onThemeToggle={handleThemeToggle}
       />
       <AnnouncementBanner />
 
@@ -452,7 +478,7 @@ export default function App() {
 
       {/* Smartphone Device Frame Simulator (on desktop) or Native Full View */}
       {isSimulatorMode ? (
-        <div className="w-full sm:max-w-[420px] sm:h-[860px] sm:max-h-[94vh] bg-black sm:rounded-[48px] sm:p-3 sm:shadow-2xl sm:border-4 sm:border-stone-800 relative flex flex-col overflow-hidden">
+        <div className="w-full h-dvh sm:max-w-[420px] sm:h-[860px] sm:max-h-[94vh] bg-black sm:rounded-[48px] sm:p-3 sm:shadow-2xl sm:border-4 sm:border-stone-800 relative flex flex-col overflow-hidden">
           {/* Smartphone Bezel & Hardware Buttons Simulation */}
           <div className="hidden sm:block absolute -left-[7px] top-28 w-[3px] h-12 bg-stone-700 rounded-l-md" />
           <div className="hidden sm:block absolute -left-[7px] top-44 w-[3px] h-12 bg-stone-700 rounded-l-md" />
@@ -461,11 +487,11 @@ export default function App() {
           {/* Smartphone Screen Glass */}
           <div className="w-full h-full bg-stone-50 sm:rounded-[36px] overflow-hidden flex flex-col relative">
             {/* Status Bar (Time, Dynamic Island / Notch, Signal, Battery) */}
-            <div className="hidden sm:flex items-center justify-between px-6 pt-3 pb-1 bg-white text-stone-900 text-xs font-mono font-semibold select-none z-30 shrink-0">
+            <div className={`hidden sm:flex items-center justify-between px-6 pt-3 pb-1 ${theme === 'dark' ? 'bg-stone-950 text-stone-100' : 'bg-white text-stone-900'} text-xs font-mono font-semibold select-none z-30 shrink-0`}>
               <span>09:41</span>
               {/* Dynamic Island Pill */}
               <div className="w-20 h-4 bg-black rounded-full mx-auto" />
-              <div className="flex items-center gap-1.5 text-stone-800">
+              <div className={`flex items-center gap-1.5 ${theme === 'dark' ? 'text-stone-200' : 'text-stone-800'}`}>
                 <Signal className="w-3 h-3" />
                 <Wifi className="w-3 h-3" />
                 <Battery className="w-4 h-4" />
@@ -476,14 +502,22 @@ export default function App() {
             <div className="flex-1 overflow-y-auto scrollbar-none relative">
               {appContent}
             </div>
+            <div
+              id="fw-modal-root"
+              className={`fw-modal-root fw-modal-root--simulator ${theme === 'dark' ? 'fw-theme-dark' : ''}`}
+            />
 
             {/* iOS Home Indicator Bar */}
             <div className="hidden sm:block absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-stone-400 rounded-full z-50 pointer-events-none" />
           </div>
         </div>
       ) : (
-        <div className="w-full max-w-lg min-h-screen bg-stone-50 shadow-xl overflow-hidden flex flex-col">
+        <div className="w-full max-w-lg min-h-screen bg-stone-50 shadow-xl overflow-hidden flex flex-col relative">
           {appContent}
+          <div
+            id="fw-modal-root"
+            className={`fw-modal-root fw-modal-root--fullscreen ${theme === 'dark' ? 'fw-theme-dark' : ''}`}
+          />
         </div>
       )}
     </div>
